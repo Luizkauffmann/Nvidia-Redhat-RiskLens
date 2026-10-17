@@ -18,7 +18,7 @@ Last reviewed: 2026-10-17.
 | IFRS 9 §5.5 | 3-stage ECL (12m vs lifetime), SICR (30 dpd rebuttable), probability-weighted scenarios, EIR discounting, POCI | `stage` + IFRS 9 mode of `src/cecl/engine.py` | https://www.ifrs.org/issued-standards/list-of-standards/ifrs-9-financial-instruments/ |
 | IASB PIR of IFRS 9 impairment (Jul 2024) | Works as intended; more guidance needed on SICR, overlays, forward-looking info; IFRS 7 credit-risk disclosure project | Overlay transparency is a known gap | https://www.ifrs.org/projects/completed-projects/2024/post-implementation-review-of-ifrs-9-impairment/ |
 
-## 2. US supervisory (public domain — fetched)
+## 2. US supervisory (public domain — PDFs in `sources/` unless marked link only)
 
 | File in `sources/` | Issuer / date | Key points | RiskLens relevance |
 |---|---|---|---|
@@ -27,14 +27,14 @@ Last reviewed: 2026-10-17.
 | `us_capital_rule_CECL_transition_2019.pdf` | Fed, FDIC, OCC — Feb 2019 | Optional 3-year phase-in of day-1 CECL capital impact (CET1) | Background |
 | `us_capital_rule_CECL_revised_transition_2020.pdf` | Same — Sep 2020 | 2-year delay + 3-year phase-in, 25% scaling factor | Background (fully phased in) |
 | `us_SR26-2_model_risk_guidance_2026_FDIC.pdf` | Fed SR 26-2 / OCC 2026-13 / FDIC — 17 Apr 2026 | **Supersedes SR 11-7 and SR 21-8**; risk-based, materiality-driven MRM; vendor models remain bank's responsibility | Model Risk Agent; the agents themselves are in scope → cite this, not SR 11-7 |
-| `us_SR11-7_model_risk_2011_superseded.pdf` | Fed — 2011 | Historical: effective challenge, validation | Superseded; keep for comparison |
-| `us_SEC_SAB119.pdf` | SEC staff — 2019 | Documentation & validation of CECL allowance for registrants | Audit trail requirements |
+| SR 11-7 *(link only: https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm)* | Fed — 2011 | Historical: effective challenge, validation | Superseded; keep for comparison |
+| SAB 119 *(link only: https://www.sec.gov/rules-regulations/staff-guidance/staff-accounting-bulletins)* | SEC staff — 2019 | Documentation & validation of CECL allowance for registrants | Audit trail requirements |
 
-## 3. International supervisory (redistribution permitted with attribution — fetched)
+## 3. International supervisory (redistribution permitted with attribution — PDFs in `sources/` unless marked link only)
 
 | File in `sources/` | Issuer / date | Key points | RiskLens relevance |
 |---|---|---|---|
-| `intl_BCBS_d350_credit_risk_and_ECL_accounting_2015.pdf` | Basel Committee — Dec 2015 | 11 principles for ECL governance, methodology, validation, disclosure | Principle-level checklist for the regulatory agent |
+| BCBS d350 *(link only: https://www.bis.org/bcbs/publ/d350.htm)* | Basel Committee — Dec 2015 | 11 principles for ECL governance, methodology, validation, disclosure | Principle-level checklist for the regulatory agent |
 | `eu_ECB_IFRS9_overlays_novel_risks_2024.pdf` | ECB Banking Supervision — Jul 2024 | Overlays for novel risks (climate, geopolitics, energy, supply chain); GDP-only treatment = bad practice; prefer in-model | Overlays must be attributed as an explicit step |
 | `eu_ESRB_wp92_cyclicality_SICR_IFRS9.pdf` | ESRB WP 92 | SICR pro-cyclicality; PD-ratio (>3×) staging test | SICR rule for IFRS 9 mode |
 
