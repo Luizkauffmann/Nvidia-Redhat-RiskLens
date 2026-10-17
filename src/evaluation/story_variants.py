@@ -20,6 +20,7 @@ from src.utils import config
 
 ROOT = config.ROOT
 GYM_DATA = ROOT / "resources_servers" / "risklens_cecl" / "data" / "variants"
+HELD_OUT = ("property_shock",)       # never used for training data; the before/after test story
 
 
 def variant_root(name: str) -> Path:
