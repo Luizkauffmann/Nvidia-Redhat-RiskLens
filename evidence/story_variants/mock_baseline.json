@@ -1,0 +1,47 @@
+{
+  "consumer_stress": {
+    "mean_reward": 0.9878,
+    "n": 15,
+    "below_0.95": {
+      "q08_pd": [
+        "says it increased"
+      ]
+    }
+  },
+  "credit_led": {
+    "mean_reward": 0.9878,
+    "n": 15,
+    "below_0.95": {
+      "q08_pd": [
+        "says it increased"
+      ]
+    }
+  },
+  "growth_led": {
+    "mean_reward": 0.9878,
+    "n": 15,
+    "below_0.95": {
+      "q08_pd": [
+        "says it increased"
+      ]
+    }
+  },
+  "property_shock": {
+    "mean_reward": 0.9878,
+    "n": 15,
+    "below_0.95": {
+      "q08_pd": [
+        "says it increased"
+      ]
+    }
+  },
+  "weights_shift": {
+    "mean_reward": 0.9878,
+    "n": 15,
+    "below_0.95": {
+      "q08_pd": [
+        "says it increased"
+      ]
+    }
+  }
+}
