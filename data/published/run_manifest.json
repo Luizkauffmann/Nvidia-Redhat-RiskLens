@@ -1,0 +1,146 @@
+[
+  {
+    "run_id": "CECL_20260731_OFFICIAL",
+    "as_of_date": "2026-07-31",
+    "framework": "CECL",
+    "status": "APPROVED",
+    "scenario_set_id": "MACRO_202607",
+    "scenario_weights": {
+      "baseline": 0.6,
+      "adverse": 0.3,
+      "severe_adverse": 0.1
+    },
+    "models": {
+      "Mortgage": {
+        "pd": "MORT_PD_v3",
+        "lgd": "MORT_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Auto Loan": {
+        "pd": "AUTO_PD_v2",
+        "lgd": "AUTO_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Personal Loan": {
+        "pd": "CONS_PD_v2",
+        "lgd": "CONS_LGD_v1",
+        "ead": "EAD_BAL_v1"
+      },
+      "Credit Card": {
+        "pd": "CC_PD_v5",
+        "lgd": "CC_LGD_v3",
+        "ead": "EAD_CCF_v2"
+      },
+      "Commercial Term Loan": {
+        "pd": "CI_PD_v3",
+        "lgd": "CI_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Revolving Credit Facility": {
+        "pd": "CI_PD_v3",
+        "lgd": "CI_LGD_v2",
+        "ead": "EAD_CCF_v2"
+      },
+      "Equipment Lease": {
+        "pd": "CI_PD_v3",
+        "lgd": "LEASE_LGD_v1",
+        "ead": "EAD_BAL_v1"
+      },
+      "Commercial Real Estate": {
+        "pd": "CRE_PD_v4",
+        "lgd": "CRE_LGD_v3",
+        "ead": "EAD_BAL_v1"
+      }
+    },
+    "overlays": [
+      {
+        "overlay_id": "OVL_CRE_OFFICE",
+        "portfolio": "CRE",
+        "amount": 1500000,
+        "reason": "Office refinancing risk not captured by CRE_PD_v4"
+      },
+      {
+        "overlay_id": "OVL_CONSUMER_STUDENT",
+        "portfolio": "Consumer",
+        "amount": 400000,
+        "reason": "Student-loan repayment restart impact on unsecured consumer"
+      }
+    ],
+    "modeled_ecl": 99682114.26,
+    "overlay_total": 1900000.0,
+    "allowance": 101582114.26,
+    "loan_count": 50000
+  },
+  {
+    "run_id": "CECL_20260831_OFFICIAL",
+    "as_of_date": "2026-08-31",
+    "framework": "CECL",
+    "status": "APPROVED",
+    "scenario_set_id": "MACRO_202608",
+    "scenario_weights": {
+      "baseline": 0.58,
+      "adverse": 0.3,
+      "severe_adverse": 0.12
+    },
+    "models": {
+      "Mortgage": {
+        "pd": "MORT_PD_v3",
+        "lgd": "MORT_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Auto Loan": {
+        "pd": "AUTO_PD_v2",
+        "lgd": "AUTO_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Personal Loan": {
+        "pd": "CONS_PD_v2",
+        "lgd": "CONS_LGD_v1",
+        "ead": "EAD_BAL_v1"
+      },
+      "Credit Card": {
+        "pd": "CC_PD_v5",
+        "lgd": "CC_LGD_v3",
+        "ead": "EAD_CCF_v2"
+      },
+      "Commercial Term Loan": {
+        "pd": "CI_PD_v3",
+        "lgd": "CI_LGD_v2",
+        "ead": "EAD_BAL_v1"
+      },
+      "Revolving Credit Facility": {
+        "pd": "CI_PD_v3",
+        "lgd": "CI_LGD_v2",
+        "ead": "EAD_CCF_v2"
+      },
+      "Equipment Lease": {
+        "pd": "CI_PD_v3",
+        "lgd": "LEASE_LGD_v1",
+        "ead": "EAD_BAL_v1"
+      },
+      "Commercial Real Estate": {
+        "pd": "CRE_PD_v4",
+        "lgd": "CRE_LGD_v3",
+        "ead": "EAD_BAL_v1"
+      }
+    },
+    "overlays": [
+      {
+        "overlay_id": "OVL_CRE_OFFICE",
+        "portfolio": "CRE",
+        "amount": 1500000,
+        "reason": "Office refinancing risk not captured by CRE_PD_v4"
+      },
+      {
+        "overlay_id": "OVL_CONSUMER_STUDENT",
+        "portfolio": "Consumer",
+        "amount": 400000,
+        "reason": "Student-loan repayment restart impact on unsecured consumer"
+      }
+    ],
+    "modeled_ecl": 119221394.0,
+    "overlay_total": 1900000.0,
+    "allowance": 121121394.0,
+    "loan_count": 51798
+  }
+]

@@ -1,0 +1,71 @@
+# CECL methodology: everything that defines HOW allowance is calculated.
+# The data (WHAT is calculated) lives in data/published.
+#
+#   ECL_i = SUM_s w_s * SUM_y  D_i,s,y * LGD_i,s,y * EAD_i,y            (annual steps, undiscounted)
+#   D_i,s,y   = S_i,s,y-1 * (1 - (1 - PD_i,s,y) ^ frac_y)                 marginal default, S = survival
+#   PD_i,s,y  = logistic(base_logit_i + macro_shift_portfolio,s,y)        base_logit from the PD scorecard
+#   LGD_i,s,y = clip(base_lgd_i - lgd_macro_kappa * collateral_dev_s,y)   (Mortgage: HPI, CRE: CRE prices)
+#   EAD_i,y   = amortising / bullet / revolving exposure profile * (1 - prepay)^(y-1)
+#   Defaulted loans (DPD >= 90 or default_flag): ECL = LGD * EAD.
+#   Allowance = SUM_i ECL_i + management overlays.
+
+products:
+  Mortgage:                  {portfolio: Mortgage,    segment: RETAIL,     profile: amortising, pd_model: MORT_PD_v3, lgd_model: MORT_LGD_v2, ead_model: EAD_BAL_v1, prepay: 0.08}
+  Auto Loan:                 {portfolio: Auto,        segment: RETAIL,     profile: amortising, pd_model: AUTO_PD_v2, lgd_model: AUTO_LGD_v2, ead_model: EAD_BAL_v1, prepay: 0.10}
+  Personal Loan:             {portfolio: Consumer,    segment: RETAIL,     profile: amortising, pd_model: CONS_PD_v2, lgd_model: CONS_LGD_v1, ead_model: EAD_BAL_v1, prepay: 0.12}
+  Credit Card:               {portfolio: Credit Card, segment: RETAIL,     profile: revolving,  pd_model: CC_PD_v5,   lgd_model: CC_LGD_v3,   ead_model: EAD_CCF_v2, prepay: 0.0, life_years: 3}
+  Commercial Term Loan:      {portfolio: C&I,         segment: COMMERCIAL, profile: amortising, pd_model: CI_PD_v3,   lgd_model: CI_LGD_v2,   ead_model: EAD_BAL_v1, prepay: 0.05}
+  Revolving Credit Facility: {portfolio: C&I,         segment: COMMERCIAL, profile: revolving,  pd_model: CI_PD_v3,   lgd_model: CI_LGD_v2,   ead_model: EAD_CCF_v2, prepay: 0.0, life_years: 3}
+  Equipment Lease:           {portfolio: C&I,         segment: COMMERCIAL, profile: amortising, pd_model: CI_PD_v3,   lgd_model: LEASE_LGD_v1, ead_model: EAD_BAL_v1, prepay: 0.04}
+  Commercial Real Estate:    {portfolio: CRE,         segment: COMMERCIAL, profile: bullet,     pd_model: CRE_PD_v4,  lgd_model: CRE_LGD_v3,  ead_model: EAD_BAL_v1, prepay: 0.03}
+
+portfolios: [CRE, C&I, Mortgage, Auto, Consumer, Credit Card]
+
+calculation:
+  max_life_years: 30
+  default_dpd: 90
+  dpd_logit_addon: {"30": 1.30, "60": 2.20}    # 30-59 DPD, 60-89 DPD
+  watchlist_logit_addon: 0.50
+
+# Internal rating scale: notch 1 = AAA ... notch 20 = CCC.
+rating_scale: [AAA, AA+, AA, AA-, A+, A, A-, BBB+, BBB, BBB-, BB+, BB, BB-, B+, B, B-, CCC+, CCC, CCC-, CC]
+
+# Macro scenarios: reasonable & supportable forecast (8 quarters), then
+# reversion to the long-run anchor by quarter 12. Each variable's deviation
+# from its anchor shifts the PD logit by beta (per unit of the variable).
+macro:
+  variables: [unemployment_rate, gdp_growth, interest_rate, hpi_growth, cre_price_growth, inflation]
+  long_run_anchor: {unemployment_rate: 4.2, gdp_growth: 2.0, interest_rate: 3.5, hpi_growth: 3.0, cre_price_growth: 2.0, inflation: 2.5}
+  scenarios: [baseline, adverse, severe_adverse]
+  forecast_quarters: 12
+  reasonable_supportable_quarters: 8
+  path_shape: [0.55, 0.75, 0.90, 1.00, 1.00, 0.90, 0.75, 0.60, 0.45, 0.30, 0.15, 0.0]
+  pd_beta:          # logit change per unit deviation (sign = direction of risk)
+    CRE:         {unemployment_rate: 0.06, gdp_growth: -0.05, interest_rate: 0.10, hpi_growth: 0.0,   cre_price_growth: -0.035, inflation: 0.02}
+    C&I:         {unemployment_rate: 0.10, gdp_growth: -0.10, interest_rate: 0.08, hpi_growth: 0.0,   cre_price_growth: 0.0,    inflation: 0.02}
+    Mortgage:    {unemployment_rate: 0.18, gdp_growth: -0.03, interest_rate: 0.06, hpi_growth: -0.02, cre_price_growth: 0.0,    inflation: 0.02}
+    Auto:        {unemployment_rate: 0.20, gdp_growth: -0.04, interest_rate: 0.04, hpi_growth: 0.0,   cre_price_growth: 0.0,    inflation: 0.04}
+    Consumer:    {unemployment_rate: 0.24, gdp_growth: -0.04, interest_rate: 0.05, hpi_growth: 0.0,   cre_price_growth: 0.0,    inflation: 0.04}
+    Credit Card: {unemployment_rate: 0.26, gdp_growth: -0.05, interest_rate: 0.05, hpi_growth: 0.0,   cre_price_growth: 0.0,    inflation: 0.05}
+  lgd_collateral:   # LGD rises as collateral values fall: LGD += kappa * (-deviation)
+    Mortgage: {variable: hpi_growth, kappa: 0.004}
+    CRE:      {variable: cre_price_growth, kappa: 0.005}
+
+# Sequential counterfactual attribution: one input set moves from the
+# previous to the current period at each step; the engine is re-run after
+# every step, so the components telescope to the reported change exactly.
+attribution:
+  steps:
+    - {id: runoff,      driver: paydowns_runoff,      label: "Paydowns, maturities and balance changes on existing loans"}
+    - {id: growth,      driver: portfolio_growth,     label: "New originations"}
+    - {id: credit,      driver: credit_deterioration, label: "Borrower credit migration"}
+    - {id: macro,       driver: macroeconomic,        label: "Macroeconomic scenario paths"}
+    - {id: methodology, driver: model_methodology,    label: "Scenario weights, model versions and overlays"}
+  drivers:
+    macroeconomic: "Macroeconomic scenario changes"
+    credit_deterioration: "Credit deterioration"
+    portfolio_growth: "Portfolio growth"
+    model_methodology: "Model / methodology & judgment"
+    paydowns_runoff: "Paydowns / runoff"
+  portfolio_fields: [current_balance, undrawn_amount, remaining_term_months, maturity_date, utilization]
+  credit_fields: [fico, dti, ltv, dscr, leverage, rating_notch, internal_rating, watchlist_flag, days_past_due, delinquency_bucket, default_flag]

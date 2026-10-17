@@ -1,0 +1,10 @@
+[project]
+name = "risklens"
+version = "0.1.0"
+description = "RiskLens AI: small-model tool-calling investigator for CECL allowance movements (NVIDIA x Red Hat Small Models Hack)"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

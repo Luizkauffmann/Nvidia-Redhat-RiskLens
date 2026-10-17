@@ -1,0 +1,9 @@
+# Global settings. Paths are relative to the repo root unless absolute.
+# Env overrides: RISKLENS_DATA_DIR, RISKLENS_OUTPUT_DIR.
+seed: 20261017
+n_loans: 50000
+reporting_dates: ["2026-07-31", "2026-08-31"]
+framework: CECL                 # ASC 326 lifetime expected credit loss
+data_dir: data/published        # generated synthetic data (committed: it is part of the submission)
+output_dir: data/outputs        # tool-call logs, caches (git-ignored)
+ground_truth_file: ground_truth.json   # evaluation only: tools and agents never read it

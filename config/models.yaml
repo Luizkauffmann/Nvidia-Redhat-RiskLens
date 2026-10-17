@@ -1,0 +1,49 @@
+# Model registry and parameters, keyed by model ID. The engine looks up the
+# parameters for the model ID stamped on each loan, so a model change shows
+# up as a change in pd_model_id / lgd_model_id on the loan tape.
+
+pd_models:
+  # Retail: logit = intercept + fico*(FICO-700)/100 + dti*(DTI-0.35) + ltv*(LTV-0.8) + util*(UTIL-0.3)
+  MORT_PD_v3: {type: retail, intercept: -5.30, fico: -1.60, dti: 2.0, ltv: 1.5,  util: 0.0}
+  AUTO_PD_v2: {type: retail, intercept: -3.90, fico: -1.40, dti: 1.5, ltv: 0.8,  util: 0.0}
+  CONS_PD_v2: {type: retail, intercept: -3.35, fico: -1.30, dti: 2.0, ltv: 0.0,  util: 0.0}
+  CC_PD_v5:   {type: retail, intercept: -3.20, fico: -1.50, dti: 1.0, ltv: 0.0,  util: 1.2}
+  # Commercial: logit = intercept + rating*(notch-10) + dscr*(DSCR-1.35) + ltv*(LTV-0.65) + leverage*(LEV-3)
+  CI_PD_v3:   {type: commercial, intercept: -4.50, rating: 0.30, dscr: -1.0, ltv: 0.0, leverage: 0.15}
+  CRE_PD_v4:  {type: commercial, intercept: -4.95, rating: 0.25, dscr: -1.6, ltv: 2.5, leverage: 0.0}
+  CRE_PD_v5:  {type: commercial, intercept: -4.40, rating: 0.30, dscr: -2.4, ltv: 3.4, leverage: 0.0}
+
+lgd_models:
+  # base_lgd = base + ltv_slope * max(LTV - ltv_floor, 0), clipped to [floor, cap]
+  MORT_LGD_v2:  {base: 0.12, ltv_slope: 0.60, ltv_floor: 0.60, floor: 0.05, cap: 0.70}
+  AUTO_LGD_v2:  {base: 0.42, ltv_slope: 0.30, ltv_floor: 0.90, floor: 0.20, cap: 0.80}
+  CONS_LGD_v1:  {base: 0.75, ltv_slope: 0.0,  ltv_floor: 0.0,  floor: 0.50, cap: 0.95}
+  CC_LGD_v3:    {base: 0.85, ltv_slope: 0.0,  ltv_floor: 0.0,  floor: 0.60, cap: 0.95}
+  CI_LGD_v2:    {base: 0.40, ltv_slope: 0.0,  ltv_floor: 0.0,  floor: 0.20, cap: 0.80}
+  LEASE_LGD_v1: {base: 0.35, ltv_slope: 0.0,  ltv_floor: 0.0,  floor: 0.15, cap: 0.70}
+  CRE_LGD_v3:   {base: 0.22, ltv_slope: 0.60, ltv_floor: 0.55, floor: 0.10, cap: 0.75}
+
+ead_models:
+  # Credit conversion factor on undrawn amounts. Under CECL, unconditionally
+  # cancellable card lines carry no allowance on the undrawn part.
+  EAD_BAL_v1: {ccf: 0.0}
+  EAD_CCF_v2: {ccf: {Credit Card: 0.0, Revolving Credit Facility: 0.50}}
+
+# Metadata published as the model_metadata dataset (what the Model Risk tools read).
+registry:
+  - {model_id: MORT_PD_v3,  model_type: PD,  portfolio: Mortgage,    version: 3, deployment_date: "2025-11-30", calibration_date: "2025-09-30", status: PRODUCTION, description: "Mortgage PD scorecard: FICO, DTI, LTV + macro overlay (unemployment, HPI)"}
+  - {model_id: AUTO_PD_v2,  model_type: PD,  portfolio: Auto,        version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Auto PD scorecard: FICO, DTI, LTV"}
+  - {model_id: CONS_PD_v2,  model_type: PD,  portfolio: Consumer,    version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Unsecured personal loan PD scorecard"}
+  - {model_id: CC_PD_v5,    model_type: PD,  portfolio: Credit Card, version: 5, deployment_date: "2026-01-31", calibration_date: "2025-12-31", status: PRODUCTION, description: "Credit card PD scorecard: FICO, utilization, DTI"}
+  - {model_id: CI_PD_v3,    model_type: PD,  portfolio: C&I,         version: 3, deployment_date: "2025-12-31", calibration_date: "2025-09-30", status: PRODUCTION, description: "C&I PD: internal rating, DSCR, leverage"}
+  - {model_id: CRE_PD_v4,   model_type: PD,  portfolio: CRE,         version: 4, deployment_date: "2026-03-31", calibration_date: "2025-12-31", status: PRODUCTION, description: "CRE PD: internal rating, DSCR, LTV + CRE price index"}
+  - {model_id: CRE_PD_v5,   model_type: PD,  portfolio: CRE,         version: 5, deployment_date: null,         calibration_date: "2026-06-30", status: IN_VALIDATION, description: "CRE PD recalibration under independent validation; not used for the allowance"}
+  - {model_id: MORT_LGD_v2, model_type: LGD, portfolio: Mortgage,    version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Mortgage LGD: LTV + HPI path"}
+  - {model_id: AUTO_LGD_v2, model_type: LGD, portfolio: Auto,        version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Auto LGD"}
+  - {model_id: CONS_LGD_v1, model_type: LGD, portfolio: Consumer,    version: 1, deployment_date: "2024-12-31", calibration_date: "2024-09-30", status: PRODUCTION, description: "Unsecured consumer LGD"}
+  - {model_id: CC_LGD_v3,   model_type: LGD, portfolio: Credit Card, version: 3, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Credit card LGD"}
+  - {model_id: CI_LGD_v2,   model_type: LGD, portfolio: C&I,         version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "C&I LGD"}
+  - {model_id: LEASE_LGD_v1, model_type: LGD, portfolio: C&I,        version: 1, deployment_date: "2024-12-31", calibration_date: "2024-09-30", status: PRODUCTION, description: "Equipment lease LGD"}
+  - {model_id: CRE_LGD_v3,  model_type: LGD, portfolio: CRE,         version: 3, deployment_date: "2025-12-31", calibration_date: "2025-09-30", status: PRODUCTION, description: "CRE LGD: LTV + CRE price path"}
+  - {model_id: EAD_BAL_v1,  model_type: EAD, portfolio: ALL,         version: 1, deployment_date: "2024-12-31", calibration_date: "2024-09-30", status: PRODUCTION, description: "Drawn balance with amortisation and prepayment"}
+  - {model_id: EAD_CCF_v2,  model_type: EAD, portfolio: ALL,         version: 2, deployment_date: "2025-06-30", calibration_date: "2025-03-31", status: PRODUCTION, description: "Revolving exposure: balance + CCF x undrawn"}

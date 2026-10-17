@@ -1,0 +1,6 @@
+# Reconciliation controls: |residual| as a share of |reported change|.
+pass_max_pct: 0.1      # PASS    if residual <= 0.1% of the change
+warning_max_pct: 1.0   # WARNING if 0.1% < residual <= 1%; FAIL above
+# Robustness check: the primary driver should be the same under the
+# sequential, reverse-order and Shapley attributions.
+require_stable_primary_driver: true

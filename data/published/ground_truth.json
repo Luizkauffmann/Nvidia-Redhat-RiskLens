@@ -1,0 +1,165 @@
+{
+  "description": "Injected July -> August 2026 story. Evaluation only: tools and agents must never read this file.",
+  "previous_date": "2026-07-31",
+  "current_date": "2026-08-31",
+  "primary_driver": "macroeconomic",
+  "primary_segment": "CRE",
+  "primary_macro_variable": "unemployment_rate",
+  "primary_macro_variable_in_cre": "cre_price_growth",
+  "model_changed": false,
+  "scenario_weights_changed": true,
+  "scenario_weights": {
+    "2026-07-31": {
+      "baseline": 0.6,
+      "adverse": 0.3,
+      "severe_adverse": 0.1
+    },
+    "2026-08-31": {
+      "baseline": 0.58,
+      "adverse": 0.3,
+      "severe_adverse": 0.12
+    }
+  },
+  "overlays_changed": false,
+  "cre_cohort_counterparties": [
+    "CP_046990",
+    "CP_046991",
+    "CP_046992",
+    "CP_046993",
+    "CP_046994",
+    "CP_046995",
+    "CP_046996",
+    "CP_046997",
+    "CP_046998",
+    "CP_046999",
+    "CP_047000",
+    "CP_047001",
+    "CP_047002",
+    "CP_047003",
+    "CP_047004",
+    "CP_047005",
+    "CP_047006",
+    "CP_047007",
+    "CP_047008",
+    "CP_047009"
+  ],
+  "cre_cohort_size": 20,
+  "largest_borrower": "CP_046990",
+  "largest_borrower_shock": {
+    "notches": 3,
+    "dscr_drop": 0.17,
+    "value_decline": 0.08,
+    "watchlist": true
+  },
+  "new_cre_exposure": 40000000,
+  "new_cre_loan_ids": [
+    "LN_0052216",
+    "LN_0052217",
+    "LN_0052218",
+    "LN_0052219",
+    "LN_0052220",
+    "LN_0052221",
+    "LN_0052222",
+    "LN_0052223",
+    "LN_0052224",
+    "LN_0052225",
+    "LN_0052226",
+    "LN_0052227"
+  ],
+  "exited_loans": 429,
+  "new_loans": 2227,
+  "macro_changes": {
+    "unemployment_rate": {
+      "baseline": [
+        0.4,
+        1.35
+      ],
+      "adverse": [
+        2.2,
+        3.3
+      ],
+      "severe_adverse": [
+        4.3,
+        5.0
+      ]
+    },
+    "gdp_growth": {
+      "baseline": [
+        -0.4,
+        -1.0
+      ],
+      "adverse": [
+        -2.5,
+        -3.1
+      ],
+      "severe_adverse": [
+        -5.0,
+        -5.6
+      ]
+    },
+    "interest_rate": {
+      "baseline": [
+        0.5,
+        0.6
+      ],
+      "adverse": [
+        0.25,
+        0.4
+      ],
+      "severe_adverse": [
+        -0.5,
+        -0.3
+      ]
+    },
+    "hpi_growth": {
+      "baseline": [
+        -1.0,
+        -1.6
+      ],
+      "adverse": [
+        -6.0,
+        -7.0
+      ],
+      "severe_adverse": [
+        -14.0,
+        -15.0
+      ]
+    },
+    "cre_price_growth": {
+      "baseline": [
+        -2.0,
+        -4.0
+      ],
+      "adverse": [
+        -12.0,
+        -15.0
+      ],
+      "severe_adverse": [
+        -25.0,
+        -28.0
+      ]
+    },
+    "inflation": {
+      "baseline": [
+        0.3,
+        0.35
+      ],
+      "adverse": [
+        0.8,
+        0.9
+      ],
+      "severe_adverse": [
+        1.2,
+        1.3
+      ]
+    }
+  },
+  "allowance": {
+    "2026-07-31": 101582114.26,
+    "2026-08-31": 121121394.0
+  },
+  "cohort_pd_12m": {
+    "july": 0.017746436300677192,
+    "august": 0.05530025346673052
+  }
+}

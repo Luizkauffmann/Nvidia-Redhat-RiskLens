@@ -1,0 +1,42 @@
+# LLM backend and agent configuration.
+#
+# Providers:
+#   mock   - deterministic keyword planner (tests, offline demo, no model needed)
+#   nvidia - NVIDIA API catalog (build.nvidia.com); needs NVIDIA_API_KEY
+#   vllm   - self-hosted vLLM (Red Hat AI Inference Server / upstream vLLM) on NVIDIA Brev;
+#            set RISKLENS_LLM_BASE_URL, e.g. http://<brev-host>:8000/v1
+#   openai - any other OpenAI-compatible endpoint (RISKLENS_LLM_BASE_URL + RISKLENS_LLM_API_KEY)
+# Env overrides: RISKLENS_LLM_PROVIDER, RISKLENS_LLM_BASE_URL, RISKLENS_LLM_MODEL, RISKLENS_LLM_API_KEY
+llm:
+  provider: mock
+  models:                     # default model id per provider (override with RISKLENS_LLM_MODEL)
+    nvidia: nvidia/nemotron-3.5-lightning-30b-a3b        # 30B total / ~3B active MoE (limit: <= 33B total)
+    vllm: nemotron-3.5-lightning                         # --served-model-name in deploy/brev_serve_nemotron.sh
+    openai: gpt-4o-mini
+    mock: mock-planner
+  base_urls:
+    nvidia: https://integrate.api.nvidia.com/v1
+    vllm: http://localhost:8000/v1
+  temperature: 0.3            # lower is steadier for tool calling
+  top_p: 0.95
+  max_tokens: 4096
+  enable_thinking: false      # passed as chat_template_kwargs.enable_thinking when supported
+  timeout_s: 120
+
+agent:
+  max_steps: 8                # model turns per question
+  max_tool_calls: 14
+  max_parallel_calls: 6       # tool calls executed per model turn
+  result_chars: 9000          # tool results are compacted to this size before going back to the model
+  grounding_revisions: 1      # extra turns allowed to fix numbers not found in tool results
+
+# Tool allow-lists. The orchestrator sees every tool today (single-agent,
+# Tool-Calling track). The specialist lists are the planned split for the
+# multi-agent version; tests check that every name exists.
+agents:
+  orchestrator: all
+  portfolio: [get_reporting_context, compare_allowance, get_portfolio_snapshot, calculate_balance_change, calculate_new_originations, calculate_paydowns, calculate_ead_change, calculate_segment_attribution, calculate_portfolio_attribution]
+  credit: [get_reporting_context, calculate_pd_migration, calculate_lgd_migration, calculate_rating_migration, identify_top_contributors, get_loan_details, get_counterparty_details, compare_borrower_periods]
+  macro: [get_reporting_context, compare_macro_scenarios, compare_scenario_weights, calculate_macro_attribution, calculate_variable_attribution, run_scenario_analysis, calculate_segment_macro_sensitivity]
+  model_risk: [get_reporting_context, compare_model_versions, compare_model_parameters, compare_management_overlays, get_model_metadata, compare_scenario_weights]
+  reconciliation: [get_reporting_context, compare_allowance, calculate_allowance_attribution, reconcile_allowance_change]
