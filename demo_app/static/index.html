@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RiskLens Attribution Pack</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">RL</span>
+    <div>
+      <div class="name">RiskLens</div>
+      <div class="sub">Allowance attribution pack · runs on this machine</div>
+    </div>
+  </div>
+  <form id="pick" class="pick">
+    <label>Framework
+      <select id="framework"><option>CECL</option><option>IFRS9</option></select>
+    </label>
+    <label>From <select id="previous"></select></label>
+    <label>To <select id="current"></select></label>
+    <button type="submit" id="load">Build pack</button>
+    <a id="export" class="ghost" href="#" title="Download the same pack as an .xlsx file">Export .xlsx</a>
+  </form>
+</header>
+
+<main class="layout">
+  <section class="sheet-area" aria-label="Attribution pack">
+    <div class="headline" id="headline"></div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <div class="legend">
+      <span class="k-input">Tool output</span>
+      <span class="k-formula">Formula</span>
+      <span class="k-link">Link to another sheet</span>
+      <span class="hint">Hover a cell to see where it came from. Click a tool output to open its source call.</span>
+    </div>
+    <div id="sheet" class="sheet" role="tabpanel"><p class="empty">Building the pack from the tools…</p></div>
+  </section>
+
+  <aside class="ask" aria-label="Ask RiskLens">
+    <h2>Ask RiskLens</h2>
+    <p class="muted">Agents explain; every number in an answer must match a tool result.</p>
+    <div class="row">
+      <label>Agents
+        <select id="mode"><option value="team">Team (orchestrator + specialists)</option><option value="orchestrator">Single agent</option></select>
+      </label>
+      <label>Model
+        <select id="backend">
+          <option value="mock">Mock planner (no model)</option>
+          <option value="ollama">Local Ollama · nemotron-3-nano:4b</option>
+          <option value="vllm">vLLM endpoint</option>
+        </select>
+      </label>
+    </div>
+    <label id="urlrow" hidden>Endpoint URL <input id="baseurl" value="http://localhost:8000/v1"></label>
+    <div class="chips" id="chips"></div>
+    <textarea id="question" rows="3" placeholder="Why did the allowance increase in August?"></textarea>
+    <button id="askbtn" type="button">Ask</button>
+    <div id="answer" class="answer" aria-live="polite"></div>
+  </aside>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
