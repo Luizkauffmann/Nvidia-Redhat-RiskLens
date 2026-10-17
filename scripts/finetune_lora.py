@@ -160,7 +160,11 @@ def main() -> None:
     if cuda:
         torch.cuda.reset_peak_memory_stats()
     t0 = time.time()
-    result = TailLossTrainer(model=model, args=targs, train_dataset=encoded, data_collator=collate).train()
+    trainer = TailLossTrainer(model=model, args=targs, train_dataset=encoded, data_collator=collate)
+    # the loss is a per-row mean, so Trainer must divide it over gradient accumulation; otherwise it
+    # logs (and backpropagates) the sum of the micro-steps. Set after __init__, which assigns it.
+    trainer.model_accepts_loss_kwargs = False
+    result = trainer.train()
     peak = torch.cuda.max_memory_allocated() if cuda else 0
     total = torch.cuda.get_device_properties(0).total_memory if cuda else 0
     model.save_pretrained(out)
