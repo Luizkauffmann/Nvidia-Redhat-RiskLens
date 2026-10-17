@@ -225,3 +225,13 @@ data/generated/*
 data/outputs/*
 data/ground_truth/*
 !data/**/.gitkeep
+
+# NeMo Gym: per-server venvs, Hydra run logs, local credentials
+.venv/
+.venv.setup.lock
+/environment_servers/
+/responses_api_agents/
+/responses_api_models/
+/outputs/
+/results/
+env.yaml

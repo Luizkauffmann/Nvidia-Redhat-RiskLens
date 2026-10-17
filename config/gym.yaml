@@ -1,0 +1,36 @@
+# NeMo Gym environment for RiskLens (resources_servers/risklens_cecl).
+#
+# An episode = one investigation question about the July -> August 2026 allowance
+# movement. The policy model may call any of the agent's deterministic tools; the
+# verifier scores the final answer against the seeded ground truth.
+#
+# reward = sum(weight * component), each component in [0, 1], so reward is in [0, 1].
+reward_weights:
+  correctness: 0.55     # share of the task's answer checks passed (facts vs ground truth)
+  grounding: 0.20       # every number in the answer traces to a tool result in this episode
+  tool_selection: 0.10  # the task's required tools were called (any-of groups)
+  call_validity: 0.10   # share of tool calls that executed without error
+  efficiency: 0.05      # 1 within the call budget, budget/calls beyond it
+
+# All episodes replay the same seeded story, so a policy could memorise answers. An answer
+# with no successful tool call gets its reward multiplied by this factor.
+no_evidence_factor: 0.25
+
+# An episode with no final text answer scores 0 regardless of the other components.
+require_final_answer: true
+
+# Numeric answer checks: a money / percent figure counts if it is within this relative tolerance.
+number_rel_tol: 0.015
+
+# Default per-task budget of tool calls before the efficiency component starts to drop.
+default_call_budget: 6
+
+# Tool results returned to the policy are compacted to this many characters (small context windows).
+result_chars: 6000
+
+# Dataset build (scripts/build_gym_dataset.py)
+dataset:
+  agent: orchestrator         # orchestrator | portfolio_agent | credit_agent | macro_agent | model_risk_agent | reconciliation_agent: whose tool allow-list the policy gets (orchestrator = all 30 tools)
+  include_paraphrases: true
+  validation_fraction: 0.25   # held-out paraphrases for validation.jsonl
+  seed: 7

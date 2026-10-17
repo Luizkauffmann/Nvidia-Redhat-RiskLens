@@ -1,0 +1,9 @@
+# Full local setup: analytics + agents + NeMo Gym + notebooks.
+# NeMo Gym needs Python >= 3.13.14:
+#   uv venv --python 3.13 .venv && source .venv/bin/activate && uv pip install -r requirements-gym.txt
+-r requirements.txt
+nemo-gym>=0.7.0
+uv>=0.5                  # Gym creates one venv per server with uv
+jupyterlab>=4
+ipykernel>=6
+matplotlib>=3.8

@@ -1,0 +1,5 @@
+nemo-gym>=0.7.0
+numpy>=1.26
+pandas>=2.2
+pyarrow>=14
+pyyaml>=6

@@ -1,0 +1,47 @@
+# NeMo Gym config for the RiskLens CECL investigation environment.
+# Start from the repo root (it is a Gym search root):
+#   gym env start --resources-server risklens_cecl --model-type vllm_model \
+#       --model nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4 --model-url http://localhost:8000/v1
+risklens_cecl:
+  resources_servers:
+    risklens_cecl:
+      entrypoint: app.py
+      domain: agent
+      verified: false
+      description: Multi-step CECL allowance investigation with 30 deterministic risk tools; reward = facts vs seeded ground truth + grounding + tool use
+      value: Teaches a small model to investigate why a bank's credit-loss allowance moved by calling the right risk tools and never inventing numbers
+      result_chars: 6000
+      tool_log_path: data/outputs/gym_tool_calls.jsonl
+      warm_cache: true
+
+risklens_cecl_simple_agent:
+  responses_api_agents:
+    simple_agent:
+      entrypoint: app.py
+      max_steps: 10
+      resources_server:
+        type: resources_servers
+        name: risklens_cecl
+      model_server:
+        type: responses_api_models
+        name: policy_model
+      datasets:
+      - name: train
+        type: train
+        jsonl_fpath: resources_servers/risklens_cecl/data/train.jsonl
+        license: Apache 2.0
+      - name: validation
+        type: validation
+        jsonl_fpath: resources_servers/risklens_cecl/data/validation.jsonl
+        license: Apache 2.0
+      - name: example
+        type: example
+        jsonl_fpath: resources_servers/risklens_cecl/data/example.jsonl
+
+risklens_cecl_environment_server:
+  environment_servers:
+    legacy_agent:
+      entrypoint: app.py
+      agent_server:
+        type: responses_api_agents
+        name: risklens_cecl_simple_agent

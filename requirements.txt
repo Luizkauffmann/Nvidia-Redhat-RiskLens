@@ -7,6 +7,11 @@ pytest>=8
 
 # Agents (Phase 3+)
 openai>=1.40             # OpenAI-compatible client: NVIDIA API catalog, vLLM, NIM
+fastapi>=0.110           # scripts/serve_policy.py (OpenAI-compatible policy endpoint)
+uvicorn>=0.29
+
+# NeMo Gym environment + notebooks (Python >= 3.13.14 for nemo-gym)
+# pip install -r requirements-gym.txt
 
 # Later phases (not needed yet)
 # streamlit>=1.35        # Phase 5 UI
