@@ -7,6 +7,7 @@ Gym verifier reward (`src/evaluation/verifier.py`).
 
 | Folder | What | Setup |
 |---|---|---|
+| `2026-10-17_frontier-claude/` | Frontier reference (Claude Opus 5.5, hand-driven, same prompt/tools/verifier) on all 15 questions: 0.997 (1.0 on the bench five) | Chat session via `scripts/frontier_validate.py`; compare with `python -m scripts.compare_to_frontier` |
 | `2026-10-17_stock-4b/` | **Invalid, kept for the record.** Stock `nemotron-3-nano:4b` with Ollama's default 4,096-token context, which silently truncated every prompt to ~2k tokens (the agent's prompt is ~11.8k). The model never saw its full instructions or the question. | Ollama 0.30.11 (Q4_K_M), MacBook M4 16 GB |
 | `2026-10-17_stock-4b-32k/` | Same model with a 32k context (`deploy/ollama/Modelfile.nemotron-nano-32k`): the valid baseline | Ollama 0.30.11 (Q4_K_M), num_ctx 32768, MacBook M4 16 GB, nothing else heavy running |
 

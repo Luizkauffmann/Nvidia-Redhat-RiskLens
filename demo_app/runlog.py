@@ -203,7 +203,9 @@ def summary(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         rows.append({
             "label": label, "model": rs[-1]["model"], "provider": rs[-1]["provider"], "runs": len(rs),
             "median_duration_s": round(statistics.median(r["duration_s"] for r in rs), 1),
-            "median_llm_s": round(statistics.median(r["llm_s"] for r in rs), 1),
+            # hand-driven frontier runs have no measurable model time (llm_s None): skip them here
+            "median_llm_s": (round(statistics.median(llm), 1)
+                             if (llm := [r["llm_s"] for r in rs if r.get("llm_s") is not None]) else None),
             "mean_llm_turns": round(statistics.mean(r["llm_turns"] for r in rs), 1),
             "mean_tool_calls": round(statistics.mean(r["tool_calls"] for r in rs), 1),
             "median_tokens_per_s": round(statistics.median(tps), 1) if tps else None,
