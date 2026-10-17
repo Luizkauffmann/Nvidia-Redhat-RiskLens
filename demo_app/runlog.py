@@ -10,10 +10,10 @@ back to the agent, as CLAUDE.md requires.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import statistics
 from datetime import datetime, timezone
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +37,10 @@ BENCH_QUESTIONS = [
 ]
 
 
+log = logging.getLogger(__name__)
+_TASKS: dict[str, Any] | None = None   # evaluation bank by normalised question, loaded once ground truth exists
+
+
 def runs_path() -> Path:
     return config.path("outputs") / "demo_app_runs.jsonl"
 
@@ -45,12 +49,17 @@ def _norm(q: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", q.lower()).strip()
 
 
-@lru_cache(maxsize=1)
 def _tasks() -> dict[str, Any]:
-    try:
-        return {_norm(t.question): t for t in build_tasks()}
-    except Exception:  # no ground truth on this machine: log runs without a quality score
-        return {}
+    """Evaluation bank keyed by question. Without ground truth, runs are logged unscored and the next call retries."""
+    global _TASKS
+    if _TASKS is None:
+        try:
+            _TASKS = {_norm(t.question): t for t in build_tasks()}
+        except Exception as exc:  # e.g. data not generated yet: don't cache the miss
+            log.warning("No evaluation ground truth (%s); runs are logged without a quality score. "
+                        "Run python -m scripts.generate_demo_data to enable scoring.", exc)
+            return {}
+    return _TASKS
 
 
 def bench_questions() -> list[str]:

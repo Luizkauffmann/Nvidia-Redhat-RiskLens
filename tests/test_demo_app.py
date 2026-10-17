@@ -118,9 +118,12 @@ def test_static_export_replays_the_server(tmp_path):
     assert set(runs) == {"summary", "runs"}
 
 
-def test_runs_are_logged_with_timing_and_quality():
+def test_runs_are_logged_with_timing_and_quality(ground_truth, monkeypatch):
     from demo_app import runlog
+    from src.evaluation.tasks import build_tasks
 
+    # Score against the test fixture's ground truth (CI has no data/ground_truth checked in).
+    monkeypatch.setattr(runlog, "_TASKS", {runlog._norm(t.question): t for t in build_tasks(ground_truth)})
     client = TestClient(app)
     questions = client.get("/api/context").json()["demo_questions"]
     assert len(questions) == len(runlog.BENCH_TASKS)        # every demo chip is a scorable bank question
