@@ -126,7 +126,7 @@ def test_runs_are_logged_with_timing_and_quality(ground_truth, monkeypatch):
     monkeypatch.setattr(runlog, "_TASKS", {runlog._norm(t.question): t for t in build_tasks(ground_truth)})
     client = TestClient(app)
     questions = client.get("/api/context").json()["demo_questions"]
-    assert len(questions) == len(runlog.BENCH_TASKS)        # every demo chip is a scorable bank question
+    assert questions == runlog.bench_questions("all")       # core bank questions + knowledge-base questions
     before = len(runlog.load_runs())
     a = client.post("/api/ask", json={"question": questions[0], "provider": "mock", "label": "mock test"}).json()
     assert a["quality"] and 0.0 <= a["quality"]["reward"] <= 1.0

@@ -27,6 +27,7 @@ python -m pytest                       # must stay green
 - NeMo Gym: `resources_servers/risklens_cecl/` (tools as endpoints + `/verify`), `src/evaluation/` (task bank, verifier, dataset builder, in-process eval, Gym runner, rollouts → SFT). Reward weights in `config/gym.yaml`. Rebuild the Gym JSONL whenever the tool list changes. See `docs/NEMO_GYM.md`. Gym needs Python ≥ 3.13.14 (`requirements-gym.txt`).
 - `src/llm/` — `get_provider()` (mock | nvidia | vllm | openai, from `config/agents.yaml` llm + `RISKLENS_LLM_*` env). `src/agents/base.py` — `ToolAgent` loop; `orchestrator.py` — Phase 3 agent + prompt; `grounding.py` — every number in an answer must match a tool result.
 - `src/data/` — seeded generator and `DataStore` (Parquet/CSV, no platform SDK).
+- `src/kb/` — local knowledge base (Postgres + pgvector, Ollama embeddings) behind `src/tools/regulatory_tools.py` (Regulatory Analyst: guidance with page citations) and `src/tools/factor_tools.py` (illustrative factor what-ifs). Built by `scripts/load_kb.py` from `docs/regulatory/sources` + `config/regulatory_sources.yaml` + `data/kb/scenario_factors.csv`. Tools must degrade to a `dependency_error` when the KB is absent (CI has no Postgres).
 - `data/ground_truth/` — evaluation only. Tools, agents and the Gym resources server must never read it; expected facts reach the verifier through dataset rows (`verifier_metadata`).
 
 ## Conventions

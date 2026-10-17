@@ -37,7 +37,9 @@ SPECIALISTS: dict[str, dict[str, str]] = {
     },
     "macro_agent": {
         "title": "Macro Economist",
-        "role": "You analyse the economic scenarios: how the forecasts changed, which macro variable drove the allowance, scenario weights and sensitivities by portfolio.",
+        "role": ("You analyse the economic scenarios: how the forecasts changed, which macro variable drove the allowance, scenario weights and sensitivities by portfolio. "
+                 "For what-if questions about a named factor scenario (rates +200bp, unemployment 7%, CRE values -30%, Fed severely adverse) "
+                 "call apply_scenario_factors and say it is a first-order sensitivity with illustrative factors, not an engine re-run."),
     },
     "model_risk_agent": {
         "title": "Model Risk Officer",
@@ -52,6 +54,13 @@ SPECIALISTS: dict[str, dict[str, str]] = {
         "role": ("You answer ad-hoc questions the standard tools don't cover by writing pandas code. Call describe_datasets first, "
                  "then run_python_analysis with short, vectorised code that assigns `result`. If the code fails, read the "
                  "traceback and fix it. Quote only numbers that appear in the result."),
+    },
+    "regulatory_agent": {
+        "title": "Regulatory Analyst",
+        "role": ("You say what the supervisory guidance requires: call search_regulation, then answer from the passages and cite each one "
+                 "as [citation], e.g. [IPS 2023 p.12]. Use get_regulatory_passage for the full text and find_guidance_citing for an ASC reference. "
+                 "Say when guidance is EU / IFRS 9 rather than US CECL. Never compute or estimate allowance figures; if the question needs "
+                 "numbers, say which specialist owns them."),
     },
     "reporting_agent": {
         "title": "Reporting Analyst",
@@ -70,6 +79,7 @@ Plan
 2. Delegate each part of the question to the specialist who owns it; ask 1-3 specialists, not all of them.
 3. For "does it reconcile" questions, or before a final executive summary, ask the reconciliation_agent.
 4. For custom slices of the data ask the quant_agent; for an Excel pack ask the reporting_agent.
+5. For what the rules or guidance say (policy, audit, examiner or model-risk expectations) ask the regulatory_agent; for a what-if factor scenario ask the macro_agent.
 
 """ + COMMON_RULES + """
 In **Facts**, tag each bullet with the specialist or tool it came from. End with **Next steps** when useful."""

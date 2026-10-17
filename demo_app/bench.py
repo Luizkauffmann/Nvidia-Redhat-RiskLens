@@ -8,6 +8,7 @@
     python -m demo_app.bench --export demo_app/baselines/2026-10-17   # save runs + summary to commit
 
 Questions come from the evaluation bank (q02, q05, q07, q13, q15), so every run gets a verifier reward.
+--suite kb adds the regulatory-agent and scenario-factor questions (runlog.KB_QUESTIONS).
 Runs go one at a time; on a 16 GB laptop keep other heavy apps closed.
 """
 from __future__ import annotations
@@ -72,6 +73,8 @@ def main() -> None:
     ap.add_argument("--mode", choices=["team", "orchestrator"], default="orchestrator")
     ap.add_argument("--thinking", action="store_true", help="leave reasoning on (slower)")
     ap.add_argument("--repeats", type=int, default=1)
+    ap.add_argument("--suite", choices=["core", "kb", "all"], default="core",
+                    help="core = 5 allowance questions (baseline); kb = regulatory + factor questions (needs scripts.load_kb)")
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--export", type=Path, help="write runs.jsonl + SUMMARY.md to this folder")
     a = ap.parse_args()
@@ -83,7 +86,7 @@ def main() -> None:
         return
     overrides = {"provider": a.provider, "base_url": a.base_url, "model": a.model,
                  "enable_thinking": True if a.thinking else False}
-    questions = bench_questions()
+    questions = bench_questions(a.suite)
     for rep in range(a.repeats):
         for i, q in enumerate(questions, 1):
             _, rec = ask(q, a.mode, overrides, a.label, source="bench")

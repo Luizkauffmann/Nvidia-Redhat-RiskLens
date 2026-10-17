@@ -64,7 +64,7 @@ def test_prompt_has_dates_and_rules():
     agent = build_orchestrator(MockProvider())
     assert f"previous_date={PREV}" in agent.system_prompt and f"current_date={CURR}" in agent.system_prompt
     assert "Never calculate" in ORCHESTRATOR_PROMPT
-    assert len(agent.tools) == len(list_tools("orchestrator")) == 33
+    assert len(agent.tools) == len(list_tools("orchestrator")) == 39   # 33 analytics + 4 regulatory + 2 factor tools
 
 
 # --------------------------------------------------------------------------- scripted "small model"
