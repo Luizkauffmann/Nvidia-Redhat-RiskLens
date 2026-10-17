@@ -206,3 +206,29 @@ def test_rollouts_to_sft(tmp_path):
     assert roles == ["system", "user", "assistant", "tool", "assistant"]
     assert out[0]["messages"][2]["tool_calls"][0]["function"]["name"] == "get_allowance_summary"
     assert out[0]["tools"][0]["type"] == "function"
+
+
+def test_mentions_match_through_unicode_spacing(tasks):
+    """Nemotron writes narrow no-break spaces and non-breaking hyphens; checks use plain ones."""
+    check = {"type": "mentions", "any_of": [r"cre price|commercial real estate price"], "desc": "x"}
+    for text in ("CRE\u202fprice growth led", "commercial\u2011real\u2011estate price growth led", "CRE price"):
+        assert verifier._check(check, text, 0.015)[0], text
+    assert not verifier._check(check, "unemployment led", 0.015)[0]
+    absent = {"type": "not_mentions", "none_of": [r"model versions? changed: yes"], "desc": "y"}
+    assert not verifier._check(absent, "Model\u00a0versions changed: yes", 0.015)[0]
+
+
+def test_rollouts_to_sft_can_rescore(tmp_path):
+    from src.evaluation.trajectories import rollouts_to_sft
+
+    row = build_rows()["example"][0]                       # q01: July allowance
+    july = load_ground_truth()["observed_cecl"]["previous_allowance"]
+    stale = {**row, "reward": 0.1, "response": {"output": [
+        {"type": "function_call", "call_id": "c1", "name": "get_allowance_summary", "arguments": json.dumps({"as_of_date": PREV})},
+        {"type": "function_call_output", "call_id": "c1", "output": json.dumps({"status": "ok", "result": {"total_allowance": july}})},
+        {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": f"July was ${july / 1e6:.2f}\u202fM."}]}]}}
+    src = tmp_path / "r.jsonl"
+    src.write_text(json.dumps(stale) + "\n")
+    assert rollouts_to_sft([src], min_reward=0.8) == []    # stored score
+    out = rollouts_to_sft([src], min_reward=0.8, rescore=True)
+    assert len(out) == 1 and out[0]["metadata"]["reward"] >= 0.8
