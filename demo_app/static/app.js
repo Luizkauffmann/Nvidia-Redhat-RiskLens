@@ -1,6 +1,10 @@
 // RiskLens offline demo: render the attribution pack and drive the Ask panel. No external dependencies.
 const $ = (id) => document.getElementById(id);
-const state = { pack: null, tab: "Summary" };
+const state = { pack: null, tab: "Summary", answers: null };
+// Snapshot mode (GitHub Pages): read files written by scripts/export_static_demo.py instead of calling the server.
+const STATIC = window.RISKLENS_STATIC === true;
+const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+const packFile = (q, ext) => `data/pack_${q.get("framework")}_${q.get("previous_date")}_${q.get("current_date")}.${ext}`;
 
 const isZero = (v) => Math.abs(v) < 0.5;  // rounding remnants such as -0.000001 display as zero
 const FMT = {
@@ -79,7 +83,7 @@ function waterfall(chart) {
     const val = s.kind === "end" ? short(s.value) : (s.value >= 0 ? "+" : "−") + short(Math.abs(s.value));
     svg += `<text x="${x + w / 2}" y="${y(top) - 6}" text-anchor="middle">${val}</text>`;
     wrap(s.label, Math.floor(bw / 7.2)).forEach((ln, j) => {
-      svg += `<text x="${x + w / 2}" y="${H - padB + 16 + j * 14}" text-anchor="middle">${ln}</text>`;
+      svg += `<text x="${x + w / 2}" y="${H - padB + 16 + j * 14}" text-anchor="middle">${esc(ln)}</text>`;
     });
   });
   return svg + "</svg>";
@@ -128,16 +132,19 @@ function renderHeadline() {
 async function loadPack(ev) {
   if (ev) ev.preventDefault();
   const q = new URLSearchParams({ previous_date: $("previous").value, current_date: $("current").value, framework: $("framework").value });
-  $("export").href = "/api/export.xlsx?" + q;
+  $("export").href = STATIC ? packFile(q, "xlsx") : "api/export.xlsx?" + q;
   $("load").disabled = true;
   $("sheet").innerHTML = '<p class="empty">Building the pack from the tools… (first build warms the attribution cache)</p>';
   try {
-    const r = await fetch("/api/pack?" + q);
-    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    const r = await fetch(STATIC ? packFile(q, "json") : "api/pack?" + q);
+    if (!r.ok) {
+      if (STATIC) throw new Error("this period pair is not in the snapshot");
+      throw new Error((await r.json()).detail || r.statusText);
+    }
     state.pack = await r.json();
     renderHeadline(); renderTabs(); renderSheet();
   } catch (e) {
-    $("sheet").innerHTML = `<p class="error">Could not build the pack: ${e.message}</p>`;
+    $("sheet").innerHTML = `<p class="error">Could not build the pack: ${esc(e.message)}</p>`;
   } finally { $("load").disabled = false; }
 }
 
@@ -153,26 +160,41 @@ async function ask() {
   $("askbtn").disabled = true;
   $("answer").innerHTML = '<p class="muted">Agents are working… local models can take a minute.</p>';
   try {
-    const r = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, mode: $("mode").value, ...backendOverrides() }) });
-    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-    const a = await r.json();
+    let a;
+    if (STATIC) {
+      a = ((state.answers || {})[$("mode").value] || {})[question];
+      if (!a) throw new Error("This is a static snapshot, so it can only replay the suggested questions. "
+        + "Run the app locally (python -m demo_app.server) to ask your own.");
+    } else {
+      const r = await fetch("api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, mode: $("mode").value, ...backendOverrides() }) });
+      if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+      a = await r.json();
+    }
     const g = (a.grounding || {}).status || "n/a";
-    const trace = a.tool_calls.map((c) => `<li class="${c.status === "ok" ? "" : "err"}">${c.tool_name}(${JSON.stringify(c.parameters || c.arguments_requested || {})}) · ${c.status} · ${c.call_id}</li>`).join("");
+    const trace = a.tool_calls.map((c) => `<li class="${c.status === "ok" ? "" : "err"}">${esc(c.tool_name)}(${esc(JSON.stringify(c.parameters || c.arguments_requested || {}))}) · ${esc(c.status)} · ${esc(c.call_id)}</li>`).join("");
     $("answer").innerHTML = `
-      <div class="meta"><span class="pill ${g}">${g}</span><span>${a.provider.provider}:${a.provider.model}</span>
-        <span>${a.duration_s}s</span><span>${a.tool_calls.length} tool calls</span>
-        ${a.specialists.length ? `<span>specialists: ${a.specialists.join(", ")}</span>` : ""}</div>
+      <div class="meta"><span class="pill ${esc(g)}">${esc(g)}</span><span>${esc(a.provider.provider)}:${esc(a.provider.model)}</span>
+        <span>${esc(a.duration_s)}s${STATIC ? " (recorded)" : ""}</span><span>${a.tool_calls.length} tool calls</span>
+        ${a.specialists.length ? `<span>specialists: ${esc(a.specialists.join(", "))}</span>` : ""}</div>
       <div class="text"></div>
       <details><summary>Tool trace</summary><ul class="trace">${trace}</ul></details>`;
     $("answer").querySelector(".text").textContent = a.answer || "(no answer)";
   } catch (e) {
-    $("answer").innerHTML = `<p class="error">The agent run failed: ${e.message}</p>`;
+    $("answer").innerHTML = `<p class="error">${STATIC ? "" : "The agent run failed: "}${esc(e.message)}</p>`;
   } finally { $("askbtn").disabled = false; }
 }
 
 async function init() {
-  const ctx = await (await fetch("/api/context")).json();
+  const ctx = await (await fetch(STATIC ? "data/context.json" : "api/context")).json();
+  if (STATIC) {
+    state.answers = await (await fetch("data/answers.json")).json();
+    document.querySelector(".brand .sub").textContent = `Allowance attribution pack · static snapshot, precomputed by the tools on ${ctx.generated_at}`;
+    $("backend").innerHTML = '<option value="mock">Recorded runs (mock planner)</option>';
+    $("backend").disabled = true;
+    $("question").readOnly = true;
+    $("question").placeholder = "Pick a suggested question above";
+  }
   const dates = ctx.reporting_dates;
   ["previous", "current"].forEach((id, i) => {
     $(id).innerHTML = dates.map((d) => `<option>${d}</option>`).join("");
