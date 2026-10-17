@@ -27,14 +27,21 @@ agent), so differences come from the model, not the environment.
 
 | | Truncated 4k (invalid) | **32k context** |
 |---|---|---|
-| Mean quality (0-1) | 0.39 | **0.97** |
+| Mean quality (0-1) | 0.39 | **0.77** |
+| Questions fully right | 0 / 5 | 3 / 5 (q02, q07, q15 at 1.0; q05 0.86) |
+| Failed runs | 0 | 1 (q13: gave up after repeated malformed tool calls, scored 0) |
 | Median time / question | 116 s | 115 s (almost all model time) |
 | Tool calls / question | 0.8 | 1.8 |
 
 With its full prompt the stock 4B picks the right tools (`get_allowance_summary`, `compare_allowance` +
-`calculate_portfolio_attribution`, `identify_top_contributors`, `reconcile_allowance_change`) and every answer
-passes grounding. Speed is the remaining gap: ~2 minutes per question on an M4, mostly reading the ~12.7k-token
-prompt on the first turn.
+`calculate_portfolio_attribution`, `identify_top_contributors`, `reconcile_allowance_change`). It still failed
+"Could this increase just be because we changed models?" by writing tool calls as text until the agent gave up.
+Speed is the other gap: ~2 minutes per question on an M4, mostly reading the ~12.7k-token prompt.
+
+**Scoring note:** a run that gives up ("[RiskLens could not complete ...]") now scores 0. Before this fix the q13
+run scored 0.988, because the verifier's "says no model version changed" pattern (a negation near "model")
+matched the give-up message itself. `effective_quality()` in `demo_app/runlog.py` applies the rule to logged runs;
+the pattern in `src/evaluation/tasks.py` could be tightened too.
 
 ## Context window: check it first
 

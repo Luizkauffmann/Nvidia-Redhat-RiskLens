@@ -96,7 +96,8 @@ def ask(req: AskRequest) -> dict[str, Any]:
     return {"answer": run.answer, "status": run.status, "grounding": run.grounding, "provider": run.provider,
             "duration_s": run.duration_s, "metrics": d["metrics"], "tool_calls": d["tool_calls"],
             "specialists": team["specialists"] if team else [], "quality": record["quality"],
-            "timing": {k: record[k] for k in ("llm_s", "tool_s", "llm_turns", "tokens_per_s")}}
+            "timing": {k: record[k] for k in ("llm_s", "tool_s", "llm_turns", "tokens_per_s")},
+            "context_truncated": record["context_truncated"]}
 
 
 @app.get("/api/runs")

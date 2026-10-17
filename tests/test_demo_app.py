@@ -146,3 +146,19 @@ def test_demo_questions_are_evaluation_bank_questions(ground_truth):
 
     bank = {t.task_id: t.question for t in build_tasks(ground_truth)}
     assert [bank[i] for i in runlog.BENCH_TASKS] == runlog.BENCH_QUESTIONS
+
+
+def test_failed_and_truncated_runs_are_flagged():
+    from demo_app import runlog
+
+    base = {"label": "x", "model": "m", "provider": "vllm", "duration_s": 1.0, "llm_s": 1.0, "tool_calls": 0,
+            "tokens_per_s": None, "grounding": "NO_NUMBERS"}
+    gave_up = {**base, "llm_turns": 2, "prompt_tokens": 4100,          # 2 turns x ~2,050 = Ollama's 4k cap
+               "answer": "[RiskLens could not complete the investigation: the model kept returning a malformed tool call.]",
+               "quality": {"reward": 0.988, "checks_passed": 2, "checks_total": 2}}   # text checks matched "not ... model"
+    fine = {**base, "llm_turns": 2, "prompt_tokens": 25000, "answer": "No model version changed.",
+            "quality": {"reward": 1.0, "checks_passed": 2, "checks_total": 2}}
+    assert runlog.effective_quality(gave_up)["reward"] == 0.0 and runlog.effective_quality(fine)["reward"] == 1.0
+    assert runlog.context_truncated(gave_up) and not runlog.context_truncated(fine)
+    row = runlog.summary([gave_up, fine])[0]
+    assert row["mean_reward"] == 0.5 and row["failed_runs"] == 1 and row["truncated_runs"] == 1

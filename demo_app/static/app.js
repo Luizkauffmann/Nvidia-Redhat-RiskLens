@@ -139,6 +139,7 @@ async function renderRuns() {
     ["Model turns", (r) => r.mean_llm_turns, 1], ["Tool calls", (r) => r.mean_tool_calls, 1],
     ["Tokens / s", (r) => r.median_tokens_per_s, 1], ["No unsupported numbers %", (r) => r.grounded_pct, 1],
     ["Mean quality", (r) => r.mean_reward, 1], ["Scored runs", (r) => r.scored_runs, 1],
+    ["Failed runs", (r) => r.failed_runs, 1], ["Truncated prompts", (r) => r.truncated_runs, 1],
   ], data.summary));
   const h4 = document.createElement("h4"); h4.textContent = "Individual runs (newest first)"; el.appendChild(h4);
   el.appendChild(simpleTable([
@@ -226,6 +227,7 @@ async function ask() {
       <div class="meta"><span class="pill ${esc(g)}">${esc(g)}</span><span>${esc(a.provider.provider)}:${esc(a.provider.model)}</span>
         <span>${esc(a.duration_s)}s${STATIC ? " (recorded)" : ""}${a.timing ? ` (model ${esc(a.timing.llm_s)}s, tools ${esc(a.timing.tool_s)}s, ${esc(a.timing.llm_turns)} turns)` : ""}</span>
         <span>${a.tool_calls.length} tool calls</span>
+        ${a.context_truncated ? `<span class="error">Prompt likely truncated by Ollama's 4k context: use model nemotron-3-nano-4b-32k</span>` : ""}
         ${a.quality ? `<span>quality ${esc(a.quality.reward)} · facts ${esc(a.quality.checks_passed)}/${esc(a.quality.checks_total)}</span>` : (a.timing ? "<span>quality: not in evaluation bank</span>" : "")}
         ${a.specialists.length ? `<span>specialists: ${esc(a.specialists.join(", "))}</span>` : ""}</div>
       <div class="text"></div>

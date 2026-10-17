@@ -112,11 +112,38 @@ def bench_questions(suite: str = "core") -> list[str]:
             "all": list(BENCH_QUESTIONS) + list(KB_QUESTIONS.values())}[suite]
 
 
+FAILED_ANSWER = "[RiskLens could not complete"   # prefix of the agent loop's give-up messages (src/agents/base.py)
+# Ollama's default context (4096) truncates prompts silently and keeps ~half for the prompt: every model turn then
+# reports about the same ~2,050 prompt tokens. The agents' real prompts are far larger.
+TRUNCATED_TURN_TOKENS = range(2000, 2100)
+
+
+def failed(answer: str | None) -> bool:
+    return not answer or answer.lstrip().startswith(FAILED_ANSWER)
+
+
+def context_truncated(rec: dict[str, Any]) -> bool:
+    turns = rec.get("llm_turns") or 0
+    return bool(turns) and rec.get("prompt_tokens", 0) // turns in TRUNCATED_TURN_TOKENS
+
+
+def effective_quality(rec: dict[str, Any]) -> dict[str, Any] | None:
+    """The logged score, except that a run that gave up scores 0 (the verifier's text checks can match the
+    give-up message itself, e.g. "not ... model" for q13)."""
+    q = rec.get("quality")
+    if q and failed(rec.get("answer")):
+        return {**q, "reward": 0.0, "checks_passed": 0, "note": "failed run scored 0"}
+    return q
+
+
 def quality(question: str, run: Any) -> dict[str, Any] | None:
     task = _tasks().get(_norm(question))
     if task is None:
         return None
     answer, calls = from_agent_run(run)
+    if failed(answer):
+        return {"task_id": task.task_id, "reward": 0.0, "components": {}, "checks_passed": 0,
+                "checks_total": len(task.checks), "missing_tool_groups": [], "note": "failed run scored 0"}
     v = score(answer, calls, task.to_dict())
     return {"task_id": task.task_id, "reward": round(v.reward, 3),
             "components": {k: round(x, 3) for k, x in v.components.items()},
@@ -148,6 +175,7 @@ def ask(question: str, mode: str = "team", overrides: dict[str, Any] | None = No
         "tools_used": run.tools_used, "grounding": (run.grounding or {}).get("status"),
         "quality": quality(question, run), "answer": run.answer,
     }
+    rec["context_truncated"] = context_truncated(rec)
     if record:
         path = runs_path()
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +198,7 @@ def summary(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         groups.setdefault(r["label"], []).append(r)
     rows = []
     for label, rs in groups.items():
-        scored = [r["quality"]["reward"] for r in rs if r.get("quality")]
+        scored = [q["reward"] for q in map(effective_quality, rs) if q]
         tps = [r["tokens_per_s"] for r in rs if r.get("tokens_per_s")]
         rows.append({
             "label": label, "model": rs[-1]["model"], "provider": rs[-1]["provider"], "runs": len(rs),
@@ -182,5 +210,7 @@ def summary(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             # NO_NUMBERS (nothing to check) is not a failure; only FAIL means an unsupported figure.
             "grounded_pct": round(100 * sum(r["grounding"] != "FAIL" for r in rs) / len(rs)),
             "scored_runs": len(scored), "mean_reward": round(statistics.mean(scored), 3) if scored else None,
+            "failed_runs": sum(failed(r.get("answer")) for r in rs),
+            "truncated_runs": sum(context_truncated(r) for r in rs),
         })
     return rows
