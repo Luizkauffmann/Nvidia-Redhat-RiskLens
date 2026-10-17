@@ -67,6 +67,8 @@ def code(s: str):
 
 def notebook(cells: list) -> nbf.NotebookNode:
     nb = nbf.v4.new_notebook()
+    for i, cell in enumerate(cells):
+        cell["id"] = f"cell-{i:02d}"             # stable ids: rebuilding doesn't churn git diffs
     nb.cells = cells
     nb.metadata = {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
                    "language_info": {"name": "python"}}
@@ -421,6 +423,59 @@ summary = pd.DataFrame([{"question": r.question[:60], "gym_reward": gym_reward(r
 display(summary[["question", "gym_reward", "tool_calls", "tool_errors", "recovered_after_error", "repaired_arguments",
                  "text_fallback_tool_calls", "revisions", "grounding", "llm_turns", "total_tokens", "duration_s"]])
 LOG.stats()
+'''),
+    md("""
+## 5 · The RiskLens team (multi-agent)
+The same model now plays several roles. The **orchestrator** delegates to specialists, each with its own prompt and a short tool list (`config/agents.yaml`):
+
+| Specialist | Owns |
+|---|---|
+| Portfolio, Credit, Macro, Model Risk | exposure; borrower deterioration; scenarios and macro variables; models, weights, overlays (Q-factors) |
+| Reconciliation | does the explanation add up (PASS / WARNING / FAIL) |
+| **Quant Analyst** | custom questions: writes pandas code that runs in a read-only sandbox (no network, no writes, no ground truth) |
+| **Reporting Analyst** | the Excel attribution pack: live formulas, a Sources sheet with every tool call |
+
+One base model for every role keeps the whole system within the 33B-parameter limit. Specialist findings carry their tool results, so the orchestrator's grounding check still traces every number.
+"""),
+    code('''
+from src.agents.team import build_team
+
+team = build_team(provider, log=LOG)
+
+def ask_team(question):
+    run = team.run(question)
+    RUNS.append(run)
+    sub = next((e for e in run.events if e["type"] == "team"), {"specialists": [], "sub_runs": []})
+    g = (run.grounding or {}).get("status", "n/a")
+    display(Markdown(f"**Q: {question}**\\n\\n{run.answer}\\n\\n---\\n*specialists: {', '.join(sub['specialists']) or 'none'} · "
+                     f"orchestrator tools: {', '.join(run.tools_used)} · grounding: {g} · {run.duration_s}s*"))
+    rows = [{"agent": s["agent"], "tools": ", ".join(t["tool_name"] for t in s["tool_calls"]),
+             "grounding": (s.get("grounding") or {}).get("status"), "seconds": s["duration_s"]} for s in sub["sub_runs"]]
+    if rows:
+        display(pd.DataFrame(rows))
+    return run
+
+_ = ask_team("Why did the allowance increase in August, and which borrowers should I look at first?")
+'''),
+    md("""
+### The Quant Analyst: a question no fixed tool answers
+With a real model, the quant writes pandas code; its hash and status show in the trace. (The offline `mock` planner doesn't write code, so it only lists the datasets.)
+"""),
+    code('''
+run = ask_team("Using Python: which 5 states carry the most CECL ECL in August 2026, and how much did each change since July?")
+for s in next(e for e in run.events if e["type"] == "team")["sub_runs"]:
+    for t in s["tool_calls"]:
+        if t["tool_name"] == "run_python_analysis":
+            print("code ran: sha256", t["result_sha256"], "| status", t["status"])
+'''),
+    md("### The Reporting Analyst: the Excel attribution pack"),
+    code('''
+run = ask_team("Build the Excel attribution pack for the ALLL committee.")
+packs = sorted((config.path("outputs") / "reports").glob("*.xlsx"))
+print("workbooks:", [p.name for p in packs])
+if IN_COLAB and packs:
+    from google.colab import files
+    files.download(str(packs[-1]))                 # Colab: download to your laptop
 '''),
 ]
 

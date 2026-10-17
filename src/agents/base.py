@@ -106,13 +106,16 @@ def _recoveries(recs: list[ToolCallRecord]) -> int:
 class ToolAgent:
     def __init__(self, name: str, system_prompt: str, provider: LLMProvider, tools: list[str] | None = None,
                  max_steps: int = 8, max_tool_calls: int = 12, result_chars: int = 6000,
-                 log: ToolCallLog | None = None, check_numbers: bool = True, max_revisions: int = 1):
+                 log: ToolCallLog | None = None, check_numbers: bool = True, max_revisions: int = 1,
+                 extra_tools: dict[str, "ExtraTool"] | None = None):
         self.name = name
         self.system_prompt = system_prompt
         self.provider = provider
         allowed = tools if tools is not None else None
         schemas = tool_schemas(name if allowed is None else None)
         self.tools = [s for s in schemas if allowed is None or s["function"]["name"] in allowed]
+        self.extra_tools = dict(extra_tools or {})          # e.g. delegation to specialist agents
+        self.tools += [t.schema for t in self.extra_tools.values()]
         self.tool_names = {s["function"]["name"] for s in self.tools}
         self.max_steps, self.max_tool_calls, self.result_chars = max_steps, max_tool_calls, result_chars
         self.log = log if log is not None else ToolCallLog()
@@ -185,7 +188,12 @@ class ToolAgent:
             return {"role": "tool", "tool_call_id": tc.id, "content": json.dumps(payload)}
         key = f"{tc.name}:{json.dumps(tc.arguments, sort_keys=True, default=str)}"
         dup = key in seen and seen[key].status == "ok"
-        rec = seen[key] if dup else call_tool(tc.name, tc.arguments, caller=self.name, log=self.log)
+        if dup:
+            rec = seen[key]
+        elif tc.name in self.extra_tools:
+            rec = self.extra_tools[tc.name].call(tc.arguments, caller=self.name, log=self.log)
+        else:
+            rec = call_tool(tc.name, tc.arguments, caller=self.name, log=self.log)
         if not dup:
             run.tool_records.append(rec)
             seen[key] = rec
@@ -201,6 +209,45 @@ class ToolAgent:
             payload = {"call_id": rec.call_id, "error": rec.error,
                        "instruction": "Fix the arguments using the hint and call the tool again, or choose another tool."}
         return {"role": "tool", "tool_call_id": tc.id, "content": json.dumps(payload, default=str)}
+
+
+@dataclass
+class ExtraTool:
+    """A non-registry tool an agent may call (delegation to another agent). ``fn(arguments) -> result dict``."""
+    schema: dict[str, Any]
+    fn: Any
+
+    @property
+    def name(self) -> str:
+        return self.schema["function"]["name"]
+
+    def call(self, arguments: Any, caller: str | None = None, log: ToolCallLog | None = None) -> ToolCallRecord:
+        import hashlib
+        from datetime import datetime, timezone
+
+        started = time.perf_counter()
+        rec = ToolCallRecord(call_id=uuid.uuid4().hex[:12], tool_name=self.name, arguments={}, parameters={},
+                             timestamp=datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+                             duration_ms=0.0, status="error", caller=caller)
+        try:
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments) if arguments.strip() else {}
+            rec.arguments = rec.parameters = dict(arguments or {})
+            required = self.schema["function"]["parameters"].get("required", [])
+            missing = [k for k in required if not rec.parameters.get(k)]
+            if missing:
+                raise ValueError(f"missing argument(s): {', '.join(missing)}")
+            rec.result = self.fn(**rec.parameters)
+            rec.result_sha256 = hashlib.sha256(json.dumps(rec.result, sort_keys=True, default=str).encode()).hexdigest()[:16]
+            rec.status = "ok"
+        except Exception as exc:                       # report to the calling model, don't crash its loop
+            rec.error = {"error_type": "invalid_arguments" if isinstance(exc, (ValueError, TypeError, json.JSONDecodeError))
+                         else "execution_error", "message": f"{type(exc).__name__}: {exc}",
+                         "hint": {"expected": self.schema["function"]["parameters"]}}
+        rec.duration_ms = round((time.perf_counter() - started) * 1000.0, 2)
+        if log is not None:
+            log.add(rec)
+        return rec
 
 
 def _assistant_tool_msg(resp: LLMResponse) -> dict[str, Any]:

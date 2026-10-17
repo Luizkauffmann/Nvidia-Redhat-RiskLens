@@ -112,6 +112,29 @@ sequenceDiagram
   UI-->>U: answer + trace + badges
 ```
 
+### The team (Phase 4, built)
+
+```mermaid
+flowchart TB
+  U["Risk manager / CFO / CRO"] --> O["Orchestrator<br/>plans · delegates · grounding check"]
+  O --> P["Portfolio"]
+  O --> C["Credit"]
+  O --> M["Macro economist"]
+  O --> R["Model risk<br/>models · weights · Q-factors"]
+  O --> X["Reconciliation<br/>PASS / WARNING / FAIL"]
+  O --> Q["Quant analyst<br/>pandas in a sandbox"]
+  O --> E["Reporting<br/>Excel attribution pack"]
+  O -. "planned" .-> G["Regulatory expert<br/>ASC 326 · IFRS 9 · cited RAG"]
+  P & C & M & R & X --> T["33 deterministic tools"]
+  Q --> S["read-only sandbox"]
+  E --> T
+  T --> D[("Booked CECL / IFRS 9 runs<br/>model metadata · macro scenarios")]
+  S --> D
+  G -.-> K[("Public guidance corpus")]
+```
+
+All roles run on one Nemotron 3.5 Lightning base (30B total / 3B active), so the system stays within the 33B limit. Each role differs only in prompt, tool allow-list and (later) a LoRA adapter.
+
 **Phase 3 (built):** one orchestrator with all 30 tools (`src/agents/orchestrator.py`).
 
 **Phase 4 (next):** specialists reuse the same `ToolAgent` loop with their own tool allow-list (11–15 tools each, `config/agents.yaml`) and a short role prompt. They return structured findings; the orchestrator plans, delegates, asks the Reconciliation Agent to check the totals, and writes the answer. Fewer tools per agent means shorter prompts and better tool choice from a small model. That's the Multi-Agent track argument.
@@ -280,9 +303,9 @@ For the hackathon: package the environment and verifier, run Nemotron through it
 |---|---|---|
 | 1 Data + engine + attribution | ✅ | CECL $99.06M → $118.30M (+$19.24M), residual $0 |
 | 2 Tools (30) | ✅ | provenance, repair, Shapley robustness |
-| Local notebooks (workflow, agent, NeMo Gym) | ✅ | Colab-compatible bootstrap |
+| Notebooks (workflow, agent + team, NeMo Gym) | ✅ | local + Colab (rehearsed on Python 3.12, fresh clone) |
 | 3 Orchestrator agent + grounding | ✅ | tested with mock and scripted endpoints; **live Nemotron run pending** (needs NVIDIA key / Brev) |
-| 4 Specialists | next | |
+| 4 Specialists + team | ✅ | orchestrator delegates; quant sandbox; Excel pack; Nemotron run pending |
 | 5 Streamlit app | next | |
 | 6 Nemotron on Brev vLLM | waiting for access | `deploy/brev_serve_nemotron.sh` ready |
 | 7 Evaluation + NeMo Gym environment | ✅ | mock baseline 0.965; Nemotron scores next |

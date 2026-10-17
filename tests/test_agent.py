@@ -18,7 +18,7 @@ from src.agents.orchestrator import ORCHESTRATOR_PROMPT, build_orchestrator
 from src.llm.mock_provider import MockProvider
 from src.llm.openai_compat import OpenAICompatibleProvider, parse_text_tool_calls
 from src.llm.provider import get_provider, llm_settings
-from src.tools import ToolCallLog, ToolContext, set_context
+from src.tools import ToolCallLog, ToolContext, list_tools, set_context
 from tests.conftest import CURR, PREV
 
 
@@ -64,7 +64,7 @@ def test_prompt_has_dates_and_rules():
     agent = build_orchestrator(MockProvider())
     assert f"previous_date={PREV}" in agent.system_prompt and f"current_date={CURR}" in agent.system_prompt
     assert "Never calculate" in ORCHESTRATOR_PROMPT
-    assert len(agent.tools) == 30
+    assert len(agent.tools) == len(list_tools("orchestrator")) == 33
 
 
 # --------------------------------------------------------------------------- scripted "small model"

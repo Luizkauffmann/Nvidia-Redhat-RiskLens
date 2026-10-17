@@ -2,7 +2,7 @@
 
 *Explain every dollar of credit loss.* Built for the NVIDIA × Red Hat Small Models Hack.
 
-Specialized small-model agents investigate why the credit-loss allowance moved. They call deterministic analytics tools and never invent numbers. The repo has synthetic data, a CECL + IFRS 9 engine with separate PD / LGD / EAD models per product, an attribution that reconciles exactly, **30 JSON tools**, an orchestrating agent that runs on Nemotron 3.5 Lightning (local vLLM / Brev or the NVIDIA API), and a **NeMo Gym environment** that scores investigations against the seeded ground truth.
+Specialized small-model agents investigate why the credit-loss allowance moved. They call deterministic analytics tools and never invent numbers. The repo has synthetic data, a CECL + IFRS 9 engine with separate PD / LGD / EAD models per product, an attribution that reconciles exactly, **33 JSON tools**, an orchestrating agent that runs on Nemotron 3.5 Lightning (local vLLM / Brev or the NVIDIA API), and a **NeMo Gym environment** that scores investigations against the seeded ground truth.
 
 > **Provenance.** Pre-hackathon work (engine, data, tools, Phase 3 agent) was imported in one commit from `Luizkauffmann/risklens-cecl`; everything after that commit was built during the hackathon. See `git log`.
 >
@@ -39,6 +39,23 @@ Start Jupyter from the repo root. Each notebook finds the checkout, generates th
 | `01_CECL_Workflow.ipynb` | The bank's traditional month-end run: source extracts, pre-run controls, official CECL + IFRS 9 runs with a run log, then the movement analysis (waterfall, segments × drivers, macro Shapley, top borrowers, reconciliation) using the agents' tools | CPU only |
 | `02_Agent_Investigator.ipynb` | Ask Nemotron why the allowance moved: answer, grounding badge, full tool trace, and the **NeMo Gym reward** for each demo question | vLLM (local/Brev) or `NVIDIA_API_KEY`; `mock` works offline |
 | `03_NeMo_Gym_Environment.ipynb` | The RiskLens NeMo Gym environment: dataset, reward function by example, mock baseline in-process and through real Gym servers, Nemotron rollouts, policy comparison, export of passing rollouts as SFT data | `nemo-gym` (Python ≥ 3.13.14); Nemotron endpoint for section 5 |
+
+## The RiskLens team (multi-agent)
+
+`src/agents/team.py`: an orchestrator delegates through `ask_<specialist>` tools. Every role is the same Nemotron model (one base keeps the system within 33B) with its own prompt and tool allow-list (`config/agents.yaml`).
+
+| Agent | Owns | Tools |
+|---|---|---|
+| Orchestrator | plan, delegate, combine, final grounding check | `ask_*`, attribution, compare |
+| Portfolio / Credit / Macro / Model Risk | exposure; borrower deterioration; scenarios; models, weights, overlays | 12–15 each |
+| Reconciliation | PASS / WARNING / FAIL, order robustness | 11 |
+| **Quant Analyst** | custom questions via pandas in a read-only sandbox (`run_python_analysis`: no network, no writes, no ground truth, 60 s limit; the code is logged with its hash) | 5 |
+| **Reporting Analyst** | Excel attribution pack (`build_attribution_workbook`): live formulas, Sources sheet with every tool call | 4 |
+
+```python
+from src.agents.team import build_team
+run = build_team(provider).run("Which borrowers should I investigate, and does it reconcile?")
+```
 
 ## NeMo Gym environment
 
@@ -125,9 +142,11 @@ config/      settings, methodology (ECL math), models (scorecards), demo_story (
 src/cecl/    engine.py (CECL + IFRS 9, macro sweep), scenarios.py (R&S + reversion), attribution.py (exact waterfall + Shapley)
 src/data/    generator.py (seeded synthetic data), loader.py (DataStore)
 src/pipeline/ cecl_run.py (traditional workflow: seed, validate, book official runs + run log)
-src/tools/   base.py (registry, validation, provenance, cache) + allowance / portfolio / credit / macro / model / reconciliation tools
+src/tools/   base.py (registry, validation, provenance, cache) + allowance / portfolio / credit / macro / model / reconciliation /
+             analysis (sandboxed pandas) / reporting (Excel pack) tools
 src/llm/     provider.py (backends + config), openai_compat.py (NVIDIA API / vLLM / NIM), mock_provider.py
-src/agents/  base.py (tool loop), orchestrator.py (Phase 3 agent + prompt), grounding.py (number check)
+src/agents/  base.py (tool loop), orchestrator.py (single agent), team.py (orchestrator + specialists), grounding.py (number check)
+src/sandbox/ runner.py (guarded subprocess for the Quant Analyst's pandas code)
 src/evaluation/ tasks.py (question bank + expected facts), verifier.py (reward), gym_dataset.py (Gym JSONL),
              local_eval.py (in-process eval), gym_runner.py (drive Gym from Python), trajectories.py (rollouts -> SFT)
 resources_servers/risklens_cecl/  NeMo Gym resources server (tools + /verify), Gym config, example dataset
@@ -146,7 +165,7 @@ docs/        PROJECT_ARCHITECTURE.md (team guide), NEMO_GYM.md, ARCHITECTURE.md 
 | 1 | Synthetic data, CECL + IFRS 9 engine, exact attribution, ground truth | ✅ |
 | 2 | Deterministic JSON tools, argument repair, provenance log, Shapley robustness checks | ✅ |
 | 3 | Single orchestrating agent: Nemotron via NVIDIA API or vLLM, tool loop, grounding check, run metrics | ✅ (live model run pending) |
-| 4 | Specialized agents: Portfolio, Credit, Macro, Model Risk, Reconciliation | next |
+| 4 | Specialized agents: Portfolio, Credit, Macro, Model Risk, Reconciliation, Quant (Python sandbox), Reporting (Excel) | ✅ team + delegation (mock + scripted tests); Nemotron run pending |
 | 5 | Streamlit UI (KPIs, waterfall, chat) | |
 | 6 | NVIDIA Nemotron 3.5 Lightning via Red Hat vLLM / NIM on Brev | |
 | 7 | Evaluation vs ground truth: NeMo Gym environment + verifier, in-process evaluator, rollouts → SFT data | ✅ environment + mock baseline; Nemotron scores pending |

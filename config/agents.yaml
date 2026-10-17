@@ -19,13 +19,15 @@ llm:
   result_chars: 6000         # tool results are compacted to this size before going back to the model
 agents:
   orchestrator:
-    description: "Plans the investigation, delegates to specialists, writes the final explanation. Sees every tool but should delegate."
+    description: Plans the investigation, delegates to specialists, writes the final explanation. Sees every tool but should delegate.
     tools:
       - get_reporting_context
       - get_allowance_summary
       - compare_allowance
       - calculate_ecl
       - get_portfolio_snapshot
+      - describe_datasets
+      - run_python_analysis
       - calculate_pd_migration
       - calculate_lgd_migration
       - calculate_rating_migration
@@ -51,8 +53,9 @@ agents:
       - calculate_segment_attribution
       - calculate_portfolio_attribution
       - reconcile_allowance_change
+      - build_attribution_workbook
   portfolio_agent:
-    description: "Exposure movements: balances, originations, runoff, EAD, segment attribution."
+    description: 'Exposure movements: balances, originations, runoff, EAD, segment attribution.'
     tools:
       - get_reporting_context
       - get_allowance_summary
@@ -69,7 +72,7 @@ agents:
       - calculate_segment_attribution
       - calculate_portfolio_attribution
   credit_agent:
-    description: "Borrower deterioration: PD / LGD / rating migration, top contributors, borrower drill-downs."
+    description: 'Borrower deterioration: PD / LGD / rating migration, top contributors, borrower drill-downs.'
     tools:
       - get_reporting_context
       - get_allowance_summary
@@ -87,7 +90,7 @@ agents:
       - calculate_segment_attribution
       - calculate_portfolio_attribution
   macro_agent:
-    description: "Economic scenarios: forecast changes, scenario weights, variable attribution, sensitivities."
+    description: 'Economic scenarios: forecast changes, scenario weights, variable attribution, sensitivities.'
     tools:
       - get_reporting_context
       - get_allowance_summary
@@ -102,7 +105,7 @@ agents:
       - calculate_segment_attribution
       - calculate_portfolio_attribution
   model_risk_agent:
-    description: "Governance: model versions and parameters, overlays, scenario weights, engine reproduction."
+    description: 'Governance: model versions and parameters, overlays, scenario weights, engine reproduction.'
     tools:
       - get_reporting_context
       - get_allowance_summary
@@ -117,7 +120,7 @@ agents:
       - get_model_metadata
       - calculate_portfolio_attribution
   reconciliation_agent:
-    description: "Numerical validation: reported vs explained change, ties, order robustness."
+    description: 'Numerical validation: reported vs explained change, ties, order robustness.'
     tools:
       - get_reporting_context
       - get_allowance_summary
@@ -130,3 +133,18 @@ agents:
       - calculate_segment_attribution
       - calculate_portfolio_attribution
       - reconcile_allowance_change
+  quant_agent:
+    description: 'Ad-hoc analysis: writes pandas code that runs in a read-only sandbox against the booked data, for questions no fixed tool answers.'
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - describe_datasets
+      - run_python_analysis
+  reporting_agent:
+    description: 'Reporting: builds the Excel attribution pack (live formulas, sources sheet) for Finance and the ALLL committee.'
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - build_attribution_workbook

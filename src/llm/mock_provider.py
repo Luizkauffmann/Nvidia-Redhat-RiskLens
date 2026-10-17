@@ -63,11 +63,16 @@ class MockProvider(LLMProvider):
             plan.append(("calculate_pd_migration", pair))
         if re.search(r"\blgd\b|loss given default", q):
             plan.append(("calculate_lgd_migration", pair))
+        if any(w in q for w in ("excel", "workbook", "spreadsheet", "report pack", "xlsx")):
+            plan.append(("build_attribution_workbook", pair))
+        if any(w in q for w in ("python", "pandas", "by state", "custom analysis", "write code")):
+            plan.append(("describe_datasets", {}))
         if any(w in q for w in ("exposure", "growth", "balance", "origination", "grew")):
             plan.append(("calculate_balance_change", pair))
         if "which portfolio" in q or "portfolio contributed" in q:
             plan.append(("calculate_segment_attribution", pair))
         if not plan or any(w in q for w in ("why", "driver", "what happened", "explain")):
+            plan = [p for p in plan if p[0] != "describe_datasets"]
             plan = [("compare_allowance", pair), ("calculate_portfolio_attribution", pair)] + plan
         seen, out = set(), []
         for name, args in plan:
@@ -94,12 +99,55 @@ class MockProvider(LLMProvider):
                 if "result" in payload:
                     results[done[m["tool_call_id"]]] = payload["result"]
         allowed = {t["function"]["name"] for t in (tools or [])}
+        if any(n.startswith("ask_") for n in allowed):
+            return self._team_turn(question, prev, curr, done, results, allowed, messages)
         pending = [(n, a) for n, a in self.plan(question, prev, curr) if n not in done.values() and n in allowed]
         if pending and tools:
             name, args = pending[0]
             return LLMResponse(tool_calls=[ToolCall(id=f"mock_{uuid.uuid4().hex[:8]}", name=name, arguments=args)],
                                raw_tool_format="native", finish_reason="tool_calls")
         return LLMResponse(content=self.compose(question, results), finish_reason="stop")
+
+    # ------------------------------------------------------------------ team mode (orchestrator with ask_* tools)
+    SPECIALIST_PRIORITY = ["reconciliation_agent", "reporting_agent", "quant_agent", "model_risk_agent", "macro_agent",
+                           "credit_agent", "portfolio_agent"]
+
+    def _owner(self, tool_name: str, allowed: set[str]) -> str | None:
+        from src.tools import list_tools
+        for agent in self.SPECIALIST_PRIORITY:
+            if f"ask_{agent}" in allowed and tool_name in list_tools(agent):
+                return agent
+        return None
+
+    def _team_turn(self, question, prev, curr, done, results, allowed, messages) -> LLMResponse:
+        plan = self.plan(question, prev, curr)
+        targets: list[str] = []
+        for name, _ in plan:
+            if name in allowed:
+                continue                         # orchestrator calls shared tools itself
+            owner = self._owner(name, allowed)
+            if owner and owner not in targets:
+                targets.append(owner)
+        direct = [(n, a) for n, a in plan if n in allowed and n not in done.values()][:1]
+        pending = [t for t in targets if f"ask_{t}" not in done.values()]
+        if direct:
+            name, args = direct[0]
+            return LLMResponse(tool_calls=[ToolCall(id=f"mock_{uuid.uuid4().hex[:8]}", name=name, arguments=args)],
+                               raw_tool_format="native", finish_reason="tool_calls")
+        if pending:
+            return LLMResponse(tool_calls=[ToolCall(id=f"mock_{uuid.uuid4().hex[:8]}", name=f"ask_{pending[0]}",
+                                                    arguments={"question": question})],
+                               raw_tool_format="native", finish_reason="tool_calls")
+        own = {k: v for k, v in results.items() if not k.startswith("ask_")}
+        text = self.compose(question, own) if own else "Here is what the specialists found."
+        head, _, rest = text.partition("\n")
+        lines = [head]
+        for k, v in results.items():
+            if k.startswith("ask_"):
+                lines += [f"**{k[4:].replace('_', ' ').title()}**", v.get("answer", "")]
+        if rest:
+            lines.append(rest)
+        return LLMResponse(content="\n".join(lines), finish_reason="stop")
 
     # ------------------------------------------------------------------ answer writing
     def compose(self, question: str, r: dict[str, Any]) -> str:
@@ -150,6 +198,14 @@ class MockProvider(LLMProvider):
             facts.append(f"Scenario weights changed: {'yes' if w['weights_changed'] else 'no'}"
                          + (f", shifted toward {w['weight_shifted_toward']}, impact {_m(w['allowance_impact_of_weight_change'])}" if w["weights_changed"] else "")
                          + " [compare_scenario_weights]")
+        if "build_attribution_workbook" in r:
+            b = r["build_attribution_workbook"]
+            h = b["headline"]
+            facts.append(f"Excel pack written to {b['path']} with sheets {', '.join(b['sheets'])}; change {_m(h['change'])}, "
+                         f"residual {_m(h['residual'])}, reconciliation {h['reconciliation']} [build_attribution_workbook]")
+        if "describe_datasets" in r:
+            facts.append("Datasets available for custom analysis: " + ", ".join(t["table"] for t in r["describe_datasets"]["tables"])
+                         + " [describe_datasets]. (mock planner: no code is written without a model)")
         if "reconcile_allowance_change" in r:
             x = r["reconcile_allowance_change"]
             head = f"Reconciliation {x['overall_status']}: the attribution explains {_p(x['pct_explained'])} of the reported change."

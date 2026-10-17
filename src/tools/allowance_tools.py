@@ -8,7 +8,8 @@ import pandas as pd
 from src.utils import config
 from src.tools.base import Framework, ToolError, ew_mean, get_context, pct_change, tool
 
-ALL = ["orchestrator", "portfolio_agent", "credit_agent", "macro_agent", "model_risk_agent", "reconciliation_agent"]
+ALL = ["orchestrator", "portfolio_agent", "credit_agent", "macro_agent", "model_risk_agent", "reconciliation_agent",
+       "quant_agent", "reporting_agent"]
 
 
 def _by_portfolio(as_of_date: str, framework: str) -> pd.DataFrame:
