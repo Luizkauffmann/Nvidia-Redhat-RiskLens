@@ -181,7 +181,7 @@ Most of the intelligence is engineering around the model, not inside it. Work th
 | **1 · Prompts and playbooks** | Role prompts per agent, tool descriptions written for a small model, investigation playbooks ("allowance up → attribution → largest driver → drill into its segment → reconcile") and 2–3 worked examples in the prompt | Partly done (orchestrator); specialists next |
 | **2 · Guardrails** | Argument repair, error hints, duplicate-call suppression, step limits, grounding check with a revision turn, reconciliation control | ✅ done |
 | **3 · Evaluation harness** | Question bank scored against ground truth (see below). **Nothing gets tuned without a score** | Next, before any fine-tuning |
-| **4 · Fine-tuning (SFT / LoRA)** | Teach the model *our* investigation style from synthetic expert trajectories | Hackathon stretch |
+| **4 · Fine-tuning (SFT / LoRA)** | Teach the model *our* investigation style from synthetic expert trajectories | LoRA on Lightning verified (smoke run); needs Nemotron rollouts as data |
 | **5 · RL in NeMo Gym** | Reward the model for reaching the right conclusion with valid, efficient tool calls | Design + small demo; full training after the event |
 
 ### 6.1 Evaluation harness (level 3)
@@ -219,7 +219,8 @@ flowchart LR
 ### 6.3 Fine-tuning plan (level 4) and compute reality
 
 - NVIDIA's published RL recipe for Nemotron 3.5 Lightning runs on **32 H100s (DAPO) to 344 GB200s (full RLVR)**. That isn't possible on hackathon credits, so **full RL is out of scope this weekend.**
-- Realistic for one Brev GPU: **LoRA SFT** on the trajectory dataset (a few thousand examples, 1–2 epochs). This must be verified on the day; tooling support for Lightning's hybrid MoE architecture is not confirmed. If LoRA on Lightning isn't workable, fall back to a smaller Nemotron/open model for one specialist (and re-check the parameter budget).
+- Realistic for one Brev GPU: **LoRA SFT** on the trajectory dataset (1–2 epochs). **Verified** with `scripts/finetune_lora.py --smoke` on the BF16 base, one A100 80 GB (transformers 5 + PEFT): peak 68.7 of 79.3 GiB, ~6.3 s per ~13k-token example (≈1.75 h for 500 rows × 2 epochs). LoRA covers attention, Mamba `in_proj` and the shared experts; the routed experts stay frozen (fused params) and PEFT rejects Mamba `out_proj`. A 48 GB card is not enough (BF16 weights alone are ~60 GB; QLoRA would not quantize the fused experts).
+- Most of each row is the system prompt + 30 tool schemas (~10k tokens); only ~190 tokens per row are trained. Per-specialist tool subsets would roughly halve training time.
 - Publish the adapter and dataset card on Hugging Face (required by the Fine-Tuned track), and serve it with vLLM's LoRA support (one base model, one adapter per specialist, if vLLM supports LoRA for this architecture).
 
 ### 6.4 NeMo Gym environment (level 5, "Best use of NeMo Gym" bounty) — built
@@ -235,7 +236,7 @@ flowchart LR
 | efficiency (0.05) | 1 within the task's call budget, budget/calls beyond |
 | × 0.25 | no successful tool call (answers recalled from memory don't pay); 0 with no answer |
 
-Status: runs end to end with `gym env start` + `gym eval run` (mock planner 0.965 mean reward on 21 train rows). Next: Nemotron scores on Brev, specialist datasets, story variants, SFT export of passing rollouts (`src/evaluation/trajectories.py`), then GRPO with NeMo RL after the event.
+Status: runs end to end with `gym env start` + `gym eval run` (mock planner 0.965 mean reward on 21 train rows; base Nemotron 3.5 Lightning 0.977 on the 15 demo questions, [evidence](../evidence/nemotron_baseline/README.md)). Five story variants built and checked against their design ([`NEMO_GYM.md`](NEMO_GYM.md#story-variants)). Next: Nemotron rollouts on the variants, SFT export of passing rollouts (`src/evaluation/trajectories.py`), full LoRA run, re-score; specialist datasets; GRPO with NeMo RL after the event.
 
 ---|---|
 | Correct conclusion | +1 per ground-truth fact stated correctly (driver, portfolio, variable, borrower, model change, reconciliation) |
@@ -309,6 +310,6 @@ For the hackathon: package the environment and verifier, run Nemotron through it
 | 5 Streamlit app | next | |
 | 6 Nemotron on Brev vLLM | waiting for access | `deploy/brev_serve_nemotron.sh` ready |
 | 7 Evaluation + NeMo Gym environment | ✅ | mock baseline 0.965; Nemotron scores next |
-| 7b Fine-tuning / RL | planned | SFT export ready; section 6 |
+| 7b Fine-tuning / RL | in progress | LoRA SFT on Lightning verified on A100 80 GB (`scripts/finetune_lora.py`); next: Nemotron rollouts → SFT data → full run; section 6.3 |
 
 *Sources for the Nemotron and NeMo facts above: the NVIDIA Nemotron 3.5 Lightning model card on Hugging Face, build.nvidia.com, the NeMo RL "Nemotron 3.5 Lightning" guide, and the NeMo Gym docs.*

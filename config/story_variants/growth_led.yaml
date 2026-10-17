@@ -1,0 +1,24 @@
+# Growth-led month: macro and weights unchanged, only a small mild cohort; a wave of new
+# business (about 5x the usual originations, $400M of new CRE) builds the allowance.
+description: "Growth-led: macro flat, heavy new originations"
+design: {primary_driver: portfolio_growth}
+macro_peak_deviation:
+  "2026-08-31":
+    baseline:       {unemployment_rate: 0.40, gdp_growth: -0.40, interest_rate: 0.50, hpi_growth: -1.0, cre_price_growth: -2.0, inflation: 0.30}
+    adverse:        {unemployment_rate: 2.20, gdp_growth: -2.50, interest_rate: 0.25, hpi_growth: -6.0, cre_price_growth: -12.0, inflation: 0.80}
+    severe_adverse: {unemployment_rate: 4.30, gdp_growth: -5.00, interest_rate: -0.50, hpi_growth: -14.0, cre_price_growth: -25.0, inflation: 1.20}
+scenario_weights:
+  "2026-08-31": {baseline: 0.60, adverse: 0.30, severe_adverse: 0.10}
+cre_cohort:
+  n_borrowers: 6
+  august_shock: {rating_downgrade_notches: [1, 1], dscr_drop: [0.02, 0.04], property_value_decline: [0.01, 0.02], watchlist_share: 0.2, dpd_30_count: 0}
+originations:
+  Mortgage: 600
+  Auto Loan: 2600
+  Personal Loan: 1200
+  Credit Card: 3500
+  Commercial Term Loan: 220
+  Revolving Credit Facility: 80
+  Equipment Lease: 200
+  Commercial Real Estate: 40
+new_cre_exposure: 400000000

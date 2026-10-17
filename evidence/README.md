@@ -1,0 +1,12 @@
+# Evidence
+
+Results we cite in the submission, committed with how they were produced. Large regenerable data
+(`data/`) stays out of git; what is here is small enough to read and reproduces from the commands given.
+
+| Folder | Shows | Produced by |
+|---|---|---|
+| [`nemotron_baseline/`](nemotron_baseline/README.md) | Base Nemotron 3.5 Lightning in the RiskLens NeMo Gym environment: **0.977** mean reward on the 15 demo questions (mock planner 0.988) | `run_gym_eval("vllm", split="example")` on an A100 |
+| [`lora_smoke/`](lora_smoke/README.md) | LoRA SFT of the 30B model fits one A100 80 GB: peak 68.7 GiB, ~6.3 s per example | `python -m scripts.finetune_lora --smoke` |
+| [`story_variants/`](story_variants/summary.md) | Five extra July → August stories with different correct answers; 14/14 design claims hold in the engine's attribution; mock planner scores 0.988 on every variant through Gym, same as the base story (`mock_baseline.json`) | `python -m scripts.build_story_variants`, then `run_gym_eval("mock", split="example", variant=...)` |
+
+Every figure in these files comes from the deterministic CECL engine or the Gym verifier, never from a model.

@@ -1,0 +1,14 @@
+# Macro-led, but through property prices and rates rather than unemployment: CRE price and
+# house price paths fall sharply, rates rise; labour market unchanged. Weights unchanged.
+description: "Property shock: CRE prices and rates worsen, unemployment flat"
+design: {primary_driver: macroeconomic, primary_portfolio: CRE, primary_macro_variable: cre_price_growth}
+macro_peak_deviation:
+  "2026-08-31":
+    baseline:       {unemployment_rate: 0.40, gdp_growth: -0.40, interest_rate: 1.20, hpi_growth: -3.0, cre_price_growth: -9.0, inflation: 0.30}
+    adverse:        {unemployment_rate: 2.20, gdp_growth: -2.50, interest_rate: 1.00, hpi_growth: -10.0, cre_price_growth: -24.0, inflation: 0.80}
+    severe_adverse: {unemployment_rate: 4.30, gdp_growth: -5.00, interest_rate: 0.50, hpi_growth: -20.0, cre_price_growth: -40.0, inflation: 1.20}
+scenario_weights:
+  "2026-08-31": {baseline: 0.60, adverse: 0.30, severe_adverse: 0.10}
+cre_cohort:
+  n_borrowers: 8
+  august_shock: {rating_downgrade_notches: [1, 1], dscr_drop: [0.03, 0.05], property_value_decline: [0.02, 0.04], watchlist_share: 0.2, dpd_30_count: 0}

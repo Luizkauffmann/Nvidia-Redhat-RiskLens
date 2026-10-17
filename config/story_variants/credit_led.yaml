@@ -1,0 +1,21 @@
+# Credit-led month: the macro outlook and scenario weights are unchanged; a larger CRE cohort
+# deteriorates sharply (downgrades, DSCR and collateral falls, more watchlist and delinquency).
+description: "Credit-led: macro flat, a large CRE cohort deteriorates sharply"
+design: {primary_driver: credit_deterioration, primary_portfolio: CRE}
+macro_peak_deviation:
+  "2026-08-31":   # same as July
+    baseline:       {unemployment_rate: 0.40, gdp_growth: -0.40, interest_rate: 0.50, hpi_growth: -1.0, cre_price_growth: -2.0, inflation: 0.30}
+    adverse:        {unemployment_rate: 2.20, gdp_growth: -2.50, interest_rate: 0.25, hpi_growth: -6.0, cre_price_growth: -12.0, inflation: 0.80}
+    severe_adverse: {unemployment_rate: 4.30, gdp_growth: -5.00, interest_rate: -0.50, hpi_growth: -14.0, cre_price_growth: -25.0, inflation: 1.20}
+scenario_weights:
+  "2026-08-31": {baseline: 0.60, adverse: 0.30, severe_adverse: 0.10}
+cre_cohort:
+  n_borrowers: 60
+  borrower_exposure_range: [8000000, 20000000]
+  largest_borrower_exposure: 30000000
+  august_shock:
+    rating_downgrade_notches: [2, 3]
+    dscr_drop: [0.15, 0.25]
+    property_value_decline: [0.08, 0.15]
+    watchlist_share: 0.6
+    dpd_30_count: 4

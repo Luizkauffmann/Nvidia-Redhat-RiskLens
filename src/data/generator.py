@@ -617,16 +617,19 @@ class DemoDataGenerator:
         loans = pd.concat([july, aug], ignore_index=True).drop(columns=["_age"])
         cps = pd.concat([jcps, acps], ignore_index=True)
         meta, assign, params = self.build_model_reference()
+        weights = self.story["scenario_weights"]
+        # intended outcome of the story; a variant states its own under `design:` (checked against the observed run)
+        intent = self.story.get("design") or {"primary_driver": "macroeconomic", "primary_portfolio": "CRE",
+                                              "primary_macro_variable": "unemployment_rate"}
         gt = {
             "seed": self.seed,
+            "story_variant": config.story_variant(),
             "previous_date": f"{self.d0:%Y-%m-%d}",
             "current_date": f"{self.d1:%Y-%m-%d}",
             "design": {
-                "primary_driver": "macroeconomic",
-                "primary_portfolio": "CRE",
-                "primary_macro_variable": "unemployment_rate",
+                **intent,
                 "model_changed": False,
-                "scenario_weights_changed": True,
+                "scenario_weights_changed": weights[f"{self.d0:%Y-%m-%d}"] != weights[f"{self.d1:%Y-%m-%d}"],
                 "overlays_changed": False,
                 "largest_borrower": self.cohort["largest"],
                 "deteriorated_cre_borrowers": list(self.cohort["ids"]),

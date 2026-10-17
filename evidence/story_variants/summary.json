@@ -1,0 +1,261 @@
+[
+  {
+    "variant": "consumer_stress",
+    "description": "Consumer stress: unemployment shock, property prices flat",
+    "previous_allowance": 97322737.8938779,
+    "current_allowance": 120701900.08629242,
+    "change": 23379162.192414522,
+    "drivers": {
+      "macroeconomic": 16651963.585615396,
+      "credit_deterioration": 3813300.1610438824,
+      "portfolio_growth": 2497560.5903196633,
+      "paydowns_runoff": 416337.85543558,
+      "model_methodology": 0.0
+    },
+    "portfolio_change": {
+      "Auto": 969948.0720488251,
+      "C&I": 9196491.557333328,
+      "CRE": 8556318.211990014,
+      "Consumer": 485989.3725913304,
+      "Credit Card": 2351160.1205885466,
+      "Mortgage": 1819254.8578624753
+    },
+    "macro_variables": {
+      "unemployment_rate": 10427397.063937426,
+      "gdp_growth": 6224566.521677971,
+      "interest_rate": 0.0,
+      "hpi_growth": 0.0,
+      "cre_price_growth": 0.0,
+      "inflation": 0.0
+    },
+    "largest_borrower": "CP_040993",
+    "scenario_weights_changed": false,
+    "design_checks": [
+      {
+        "claim": "allowance_increases",
+        "expected": true,
+        "observed": true,
+        "ok": true
+      },
+      {
+        "claim": "primary_driver",
+        "expected": "macroeconomic",
+        "observed": "macroeconomic",
+        "ok": true
+      },
+      {
+        "claim": "primary_macro_variable",
+        "expected": "unemployment_rate",
+        "observed": "unemployment_rate",
+        "ok": true
+      }
+    ],
+    "gym_dataset": "resources_servers/risklens_cecl/data/variants/consumer_stress"
+  },
+  {
+    "variant": "credit_led",
+    "description": "Credit-led: macro flat, a large CRE cohort deteriorates sharply",
+    "previous_allowance": 114801060.32779905,
+    "current_allowance": 178934605.3863641,
+    "change": 64133545.05856505,
+    "drivers": {
+      "credit_deterioration": 61928731.99353221,
+      "portfolio_growth": 2316983.0477862656,
+      "paydowns_runoff": -112169.98275342584,
+      "macroeconomic": 0.0,
+      "model_methodology": 0.0
+    },
+    "portfolio_change": {
+      "Auto": 388878.00471631007,
+      "C&I": 1585288.692050327,
+      "CRE": 60807348.19959514,
+      "Consumer": 61213.796642098445,
+      "Credit Card": 451142.69845163,
+      "Mortgage": 839673.6671095586
+    },
+    "macro_variables": {
+      "unemployment_rate": 0.0,
+      "gdp_growth": 0.0,
+      "interest_rate": 0.0,
+      "hpi_growth": 0.0,
+      "cre_price_growth": 0.0,
+      "inflation": 0.0
+    },
+    "largest_borrower": "CP_040343",
+    "scenario_weights_changed": false,
+    "design_checks": [
+      {
+        "claim": "allowance_increases",
+        "expected": true,
+        "observed": true,
+        "ok": true
+      },
+      {
+        "claim": "primary_driver",
+        "expected": "credit_deterioration",
+        "observed": "credit_deterioration",
+        "ok": true
+      },
+      {
+        "claim": "primary_portfolio",
+        "expected": "CRE",
+        "observed": "CRE",
+        "ok": true
+      }
+    ],
+    "gym_dataset": "resources_servers/risklens_cecl/data/variants/credit_led"
+  },
+  {
+    "variant": "growth_led",
+    "description": "Growth-led: macro flat, heavy new originations",
+    "previous_allowance": 97322737.8938779,
+    "current_allowance": 116374347.39201778,
+    "change": 19051609.498139888,
+    "drivers": {
+      "portfolio_growth": 14821971.481660455,
+      "credit_deterioration": 3813300.1610438526,
+      "paydowns_runoff": 416337.85543558,
+      "macroeconomic": 0.0,
+      "model_methodology": 0.0
+    },
+    "portfolio_change": {
+      "Auto": 1385804.9117506617,
+      "C&I": 5085319.737773578,
+      "CRE": 7897514.682113707,
+      "Consumer": 560283.680587811,
+      "Credit Card": 1782542.5838495847,
+      "Mortgage": 2340143.9020645274
+    },
+    "macro_variables": {
+      "unemployment_rate": 0.0,
+      "gdp_growth": 0.0,
+      "interest_rate": 0.0,
+      "hpi_growth": 0.0,
+      "cre_price_growth": 0.0,
+      "inflation": 0.0
+    },
+    "largest_borrower": "CP_040993",
+    "scenario_weights_changed": false,
+    "design_checks": [
+      {
+        "claim": "allowance_increases",
+        "expected": true,
+        "observed": true,
+        "ok": true
+      },
+      {
+        "claim": "primary_driver",
+        "expected": "portfolio_growth",
+        "observed": "portfolio_growth",
+        "ok": true
+      }
+    ],
+    "gym_dataset": "resources_servers/risklens_cecl/data/variants/growth_led"
+  },
+  {
+    "variant": "property_shock",
+    "description": "Property shock: CRE prices and rates worsen, unemployment flat",
+    "previous_allowance": 97492788.83924335,
+    "current_allowance": 114979768.35422552,
+    "change": 17486979.514982164,
+    "drivers": {
+      "macroeconomic": 15870846.112568602,
+      "paydowns_runoff": -4847317.1927188635,
+      "credit_deterioration": 4184152.5928447098,
+      "portfolio_growth": 2279298.0022877157,
+      "model_methodology": 0.0
+    },
+    "portfolio_change": {
+      "Auto": 390697.7789056334,
+      "C&I": 763769.5270802309,
+      "CRE": 14077443.99253078,
+      "Consumer": 84440.18317589504,
+      "Credit Card": 633372.9642923318,
+      "Mortgage": 1537255.0689972977
+    },
+    "macro_variables": {
+      "cre_price_growth": 12015961.37259674,
+      "interest_rate": 3053650.674775958,
+      "hpi_growth": 801234.0651959032,
+      "unemployment_rate": 0.0,
+      "gdp_growth": 0.0,
+      "inflation": 0.0
+    },
+    "largest_borrower": "CP_040535",
+    "scenario_weights_changed": false,
+    "design_checks": [
+      {
+        "claim": "allowance_increases",
+        "expected": true,
+        "observed": true,
+        "ok": true
+      },
+      {
+        "claim": "primary_driver",
+        "expected": "macroeconomic",
+        "observed": "macroeconomic",
+        "ok": true
+      },
+      {
+        "claim": "primary_portfolio",
+        "expected": "CRE",
+        "observed": "CRE",
+        "ok": true
+      },
+      {
+        "claim": "primary_macro_variable",
+        "expected": "cre_price_growth",
+        "observed": "cre_price_growth",
+        "ok": true
+      }
+    ],
+    "gym_dataset": "resources_servers/risklens_cecl/data/variants/property_shock"
+  },
+  {
+    "variant": "weights_shift",
+    "description": "Weights shift: scenario paths flat, weight moved to severe adverse",
+    "previous_allowance": 97322737.8938779,
+    "current_allowance": 116323358.02179469,
+    "change": 19000620.127916798,
+    "drivers": {
+      "model_methodology": 12273421.521117672,
+      "credit_deterioration": 3813300.1610438824,
+      "portfolio_growth": 2497560.5903196633,
+      "paydowns_runoff": 416337.85543558,
+      "macroeconomic": 0.0
+    },
+    "portfolio_change": {
+      "Auto": 592754.793785972,
+      "C&I": 5212663.374064686,
+      "CRE": 9911658.90057228,
+      "Consumer": 226767.5879548499,
+      "Credit Card": 1250039.885984337,
+      "Mortgage": 1806735.5855546696
+    },
+    "macro_variables": {
+      "unemployment_rate": 0.0,
+      "gdp_growth": 0.0,
+      "interest_rate": 0.0,
+      "hpi_growth": 0.0,
+      "cre_price_growth": 0.0,
+      "inflation": 0.0
+    },
+    "largest_borrower": "CP_040993",
+    "scenario_weights_changed": true,
+    "design_checks": [
+      {
+        "claim": "allowance_increases",
+        "expected": true,
+        "observed": true,
+        "ok": true
+      },
+      {
+        "claim": "primary_driver",
+        "expected": "model_methodology",
+        "observed": "model_methodology",
+        "ok": true
+      }
+    ],
+    "gym_dataset": "resources_servers/risklens_cecl/data/variants/weights_shift"
+  }
+]

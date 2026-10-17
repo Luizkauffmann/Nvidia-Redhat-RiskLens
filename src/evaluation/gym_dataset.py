@@ -50,8 +50,9 @@ def system_prompt() -> str:
 
 def task_row(task: Task, agent: str = "orchestrator", tools: list[dict[str, Any]] | None = None,
              prompt: str | None = None) -> dict[str, Any]:
+    variant = config.story_variant()
     return {
-        "id": task.task_id,
+        "id": f"{variant}__{task.task_id}" if variant else task.task_id,
         "agent": agent,
         "responses_create_params": {
             "input": [{"role": "system", "content": prompt or system_prompt()},
@@ -62,7 +63,7 @@ def task_row(task: Task, agent: str = "orchestrator", tools: list[dict[str, Any]
         "verifier_metadata": {
             "task_id": task.task_id, "question": task.question, "category": task.category,
             "checks": task.checks, "required_tools": task.required_tools, "call_budget": task.call_budget,
-            "paraphrase_of": task.paraphrase_of,
+            "paraphrase_of": task.paraphrase_of, **({"story_variant": variant} if variant else {}),
         },
     }
 

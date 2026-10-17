@@ -12,6 +12,8 @@ python -m scripts.generate_demo_data   # rebuild data/generated + data/ground_tr
 python -m scripts.precompute_analytics # warm attribution/Shapley cache before a demo (~75 s once)
 python -m scripts.phase1_report        # sanity summary
 python -m scripts.build_gym_dataset    # NeMo Gym JSONL (resources_servers/risklens_cecl/data)
+python -m scripts.build_story_variants # 5 extra stories -> data/variants/, Gym rows, evidence/story_variants
+python -m scripts.finetune_lora --smoke  # LoRA SFT on Lightning (GPU box, requirements-train.txt)
 python -m scripts.build_notebooks      # regenerate notebooks/0*.ipynb from the builder
 python -m pytest                       # must stay green
 ```
@@ -43,4 +45,4 @@ This repo (`Luizkauffmann/Nvidia-Redhat-RiskLens`) holds only work done during t
 
 ## Status
 Phase 4 team built (`src/agents/team.py`: orchestrator delegates via `ask_<specialist>`; quant sandbox `src/sandbox/runner.py`; Excel pack). Notebooks verified in a Colab-like rehearsal (Python 3.12, fresh clone) and locally. Next: regulatory agent (RAG with citations + Gym task), then macro/Q-factor.
-NeMo Gym environment done (mock baseline 0.965 through real Gym servers); notebooks rebuilt for local runs. Earlier: Phase 3 done: orchestrator agent + grounding check, tested with mock and scripted fake endpoints (108 tests); not yet run against live Nemotron (NVIDIA API is blocked from the dev sandbox). Story: CECL $99.06M → $118.30M (+$19.24M); macro primary under sequential, reverse and Shapley.
+Base Nemotron (BF16 on A100 vLLM) scores 0.977 in Gym on the demo split; LoRA SFT on Lightning verified on one A100 80 GB; five story variants (`config/story_variants/`) with design checks. Results live in `evidence/`. NeMo Gym environment done (mock baseline 0.965 through real Gym servers); notebooks rebuilt for local runs. Earlier: Phase 3 done: orchestrator agent + grounding check, tested with mock and scripted fake endpoints (108 tests); since run live against Nemotron on vLLM (the NVIDIA API is blocked from the dev sandbox). Story: CECL $99.06M → $118.30M (+$19.24M); macro primary under sequential, reverse and Shapley.
