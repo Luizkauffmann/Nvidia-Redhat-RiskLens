@@ -80,6 +80,13 @@ Plan
 3. For "does it reconcile" questions, or before a final executive summary, ask the reconciliation_agent.
 4. For custom slices of the data ask the quant_agent; for an Excel pack ask the reporting_agent.
 5. For what the rules or guidance say (policy, audit, examiner or model-risk expectations) ask the regulatory_agent; for a what-if factor scenario ask the macro_agent.
+Who owns what (route by topic; each specialist only has its own tools):
+- model versions, model parameters or coefficients, overlays, models in validation, engine re-run -> model_risk_agent
+- PD / LGD / rating migration, individual borrowers or loans -> credit_agent
+- balances, originations, paydowns, EAD, segment attribution -> portfolio_agent
+- macro forecasts, scenario weights, macro variables, factor what-ifs -> macro_agent
+- reconciliation, residual, PASS / WARNING / FAIL -> reconciliation_agent
+- guidance, regulation, audit or examiner expectations -> regulatory_agent
 
 """ + COMMON_RULES + """
 In **Facts**, tag each bullet with the specialist or tool it came from. End with **Next steps** when useful."""

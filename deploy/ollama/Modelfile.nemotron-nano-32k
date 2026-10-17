@@ -1,0 +1,10 @@
+# Nemotron 3 Nano 4B with a 32k-token context window for the RiskLens agents.
+# Ollama's default window (4096) silently truncates the agents' prompts: the single agent's system prompt
+# plus 39 tool schemas is ~11.8k tokens and each specialist's is 3.5-5k before tool results.
+#
+#   ollama pull nemotron-3-nano:4b
+#   ollama create nemotron-3-nano-4b-32k -f deploy/ollama/Modelfile.nemotron-nano-32k
+#
+# Renderer and tool-call parser are inherited from the base model.
+FROM nemotron-3-nano:4b
+PARAMETER num_ctx 32768
