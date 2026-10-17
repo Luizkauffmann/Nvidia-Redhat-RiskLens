@@ -55,8 +55,33 @@ python -m demo_app.server                    # http://127.0.0.1:8050 (mock plann
 | `POST /api/ask` | `{question, mode: team\|orchestrator, provider, base_url, model}`: answer + grounding + tool calls |
 | `POST /api/tool` | call any registered tool directly (for wiring new agents) |
 | `GET /api/export.xlsx` | the original Excel pack, for anyone with a spreadsheet app |
+| `GET /api/runs` | every logged Ask with model, timing (model vs tools), tokens and verifier reward; shown in the **Model runs** tab |
+
+**Comparing models:** `python -m demo_app.bench --label "<name>" --provider vllm --base-url <url> --model <id>` runs five evaluation-bank questions and logs speed and quality; `--summary` compares, `--export` saves a baseline. Committed baselines: [`demo_app/baselines/`](demo_app/baselines) (stock Nemotron 3 Nano 4B on an M4 16 GB: median 116 s/question, quality 0.39).
 
 **Static snapshot on GitHub Pages:** every push to `main` runs `.github/workflows/pages.yml`, which generates the seeded data and runs `python -m scripts.export_static_demo` to publish **https://luizkauffmann.github.io/nvidia-redhat-risklens/**. The packs (CECL and IFRS 9), Excel downloads and recorded agent runs for the suggested questions are precomputed by the same tools, so the numbers and call IDs are real. The Ask panel only replays those questions; to ask your own, run the server locally or in a Codespace (`python -m demo_app.server --host 0.0.0.0`, then open the forwarded port 8050).
+
+## Regulatory agent and scenario factors (local knowledge base)
+
+A **Regulatory Analyst** specialist answers *"what does the guidance say?"* with **document + page citations** (e.g. `[IPS 2023 p.12]`), and the Macro Economist can run a **factor what-if** (e.g. *"What would the allowance be if unemployment hits 7%?"*). Both read a local knowledge base: PostgreSQL + pgvector, with embeddings from Ollama. Nothing leaves the machine.
+
+```bash
+createdb risklens                    # PostgreSQL with the pgvector extension
+ollama pull nomic-embed-text         # 274 MB embedding model (Ollama must be running for searches)
+python -m scripts.load_kb            # schema + scenario factors + docs/regulatory/sources (528 page-cited passages)
+python -m demo_app.bench --suite kb  # score the regulatory + factor questions
+```
+
+| Tool | Agent | What it returns |
+|---|---|---|
+| `search_regulation(query, area?)` | regulatory | best passages from the ACL policy statement (2023), CECL capital rules, SR 26-2, ECB/ESRB IFRS 9 papers, cited by page; superseded guidance excluded |
+| `get_regulatory_passage(citation)` | regulatory | full text of one passage |
+| `find_guidance_citing(codification_ref)` | regulatory | supervisory passages citing an ASC reference (FASB text itself is copyrighted and not stored) |
+| `list_regulatory_documents()` | regulatory | the catalog (`config/regulatory_sources.yaml`): issuer, area, effective date, licence |
+| `get_scenario_factors(factor_scenario?)` | macro | PD multiplier / LGD adjustment / CCF per portfolio (`data/kb/scenario_factors.csv`, **illustrative**) |
+| `apply_scenario_factors(factor_scenario, as_of_date)` | macro | first-order what-if on the official run: modeled ECL × PD multiplier × (LGD + adj)/LGD per portfolio, overlays unchanged; not an engine re-run (use `run_scenario_analysis` for that) |
+
+Without Postgres or Ollama the tools return a `dependency_error` with the fix, and the rest of RiskLens works as before (CI runs without them).
 
 ## Notebooks (run locally; Colab still works)
 

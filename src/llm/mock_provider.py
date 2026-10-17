@@ -45,6 +45,12 @@ class MockProvider(LLMProvider):
         pair = {"previous_date": prev, "current_date": curr}
         cre = "cre" in re.findall(r"[a-z&]+", q) or "commercial real estate" in q
         plan: list[tuple[str, dict[str, Any]]] = []
+        factor = self._factor_scenario(q)
+        if factor and any(w in q for w in ("what if", "what-if", "factor", "would", "scenario")):
+            plan.append(("apply_scenario_factors", {"factor_scenario": factor, "as_of_date": curr}))
+        if any(w in q for w in ("guidance", "regulat", "policy statement", "examiner", "audit", "supervis",
+                                "sr 26", "sr 11", "require", "ecb", "esrb", "rules say")):
+            plan.append(("search_regulation", {"query": question}))
         if "reconcil" in q or "add up" in q or "tie out" in q:
             plan.append(("reconcile_allowance_change", pair))
         if re.search(r"\bmodels?\b", q) and "macro" not in q:
@@ -71,7 +77,8 @@ class MockProvider(LLMProvider):
             plan.append(("calculate_balance_change", pair))
         if "which portfolio" in q or "portfolio contributed" in q:
             plan.append(("calculate_segment_attribution", pair))
-        if not plan or any(w in q for w in ("why", "driver", "what happened", "explain")):
+        if not plan or (any(w in q for w in ("why", "driver", "what happened", "explain"))
+                        and not any(n in ("search_regulation", "apply_scenario_factors") for n, _ in plan)):
             plan = [p for p in plan if p[0] != "describe_datasets"]
             plan = [("compare_allowance", pair), ("calculate_portfolio_attribution", pair)] + plan
         seen, out = set(), []
@@ -81,6 +88,15 @@ class MockProvider(LLMProvider):
                 seen.add(k)
                 out.append((name, args))
         return out
+
+    FACTOR_RULES = [("rates_plus_200bp", r"\b200\s*(bp|basis)|\+200bp"),
+                    ("unemployment_7pct", r"(unemploy|jobless)\D{0,30}7\s*%|7\s*%\D{0,30}(unemploy|jobless)"),
+                    ("cre_downturn_30pct", r"cre downturn|30\s*%\D{0,40}(commercial real estate|cre)|(commercial real estate|cre)\D{0,40}30\s*%"),
+                    ("fed_2026_severely_adverse", r"severely adverse|stress test"),
+                    ("baseline", r"\bbaseline factors?\b")]
+
+    def _factor_scenario(self, q: str) -> str | None:
+        return next((name for name, pat in self.FACTOR_RULES if re.search(pat, q)), None)
 
     # ------------------------------------------------------------------ protocol
     def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None,
@@ -109,8 +125,8 @@ class MockProvider(LLMProvider):
         return LLMResponse(content=self.compose(question, results), finish_reason="stop")
 
     # ------------------------------------------------------------------ team mode (orchestrator with ask_* tools)
-    SPECIALIST_PRIORITY = ["reconciliation_agent", "reporting_agent", "quant_agent", "model_risk_agent", "macro_agent",
-                           "credit_agent", "portfolio_agent"]
+    SPECIALIST_PRIORITY = ["reconciliation_agent", "reporting_agent", "quant_agent", "regulatory_agent", "model_risk_agent",
+                           "macro_agent", "credit_agent", "portfolio_agent"]
 
     def _owner(self, tool_name: str, allowed: set[str]) -> str | None:
         from src.tools import list_tools
@@ -206,6 +222,21 @@ class MockProvider(LLMProvider):
         if "describe_datasets" in r:
             facts.append("Datasets available for custom analysis: " + ", ".join(t["table"] for t in r["describe_datasets"]["tables"])
                          + " [describe_datasets]. (mock planner: no code is written without a model)")
+        if "apply_scenario_factors" in r:
+            x = r["apply_scenario_factors"]
+            head = (f"Under the {x['factor_scenario']} factor scenario the {x['framework']} allowance would be "
+                    f"{_m(x['scenario_allowance'])} versus {_m(x['official_allowance'])} official ({_p(x['change_pct'])}).")
+            for p in [p for p in x["by_portfolio"] if p["covered"]][:3]:
+                facts.append(f"{p['portfolio']}: {_m(p['change'])} (PD x{p['pd_mult']}, LGD {p['lgd_adj']:+.2f}) [apply_scenario_factors]")
+            if x["not_covered"]:
+                facts.append(f"No factors on file for: {', '.join(x['not_covered'])} (left unchanged) [apply_scenario_factors]")
+            facts.append(f"Method: {x['method']} Factors are illustrative team assumptions [apply_scenario_factors]")
+        if "search_regulation" in r:
+            hits = r["search_regulation"]["passages"]
+            head = f"Here is what the guidance says, from {hits[0]['document']}." if hits else head
+            for h in hits[:2]:
+                snippet = re.split(r"(?<=[.;])\s", h["text"], maxsplit=1)[0][:240]
+                facts.append(f"{snippet} [{h['citation']}] [search_regulation]")
         if "reconcile_allowance_change" in r:
             x = r["reconcile_allowance_change"]
             head = f"Reconciliation {x['overall_status']}: the attribution explains {_p(x['pct_explained'])} of the reported change."

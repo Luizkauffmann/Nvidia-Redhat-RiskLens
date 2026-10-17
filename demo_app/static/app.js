@@ -89,16 +89,65 @@ function waterfall(chart) {
   return svg + "</svg>";
 }
 
+const RUNS_TAB = "Model runs";
+
 function renderTabs() {
   const tabs = $("tabs");
   tabs.innerHTML = "";
-  state.pack.sheets.forEach((s) => {
+  [...state.pack.sheets.map((s) => s.name), RUNS_TAB].forEach((name) => {
     const b = document.createElement("button");
-    b.type = "button"; b.role = "tab"; b.textContent = s.name;
-    b.setAttribute("aria-selected", String(s.name === state.tab));
-    b.addEventListener("click", () => { state.tab = s.name; renderTabs(); renderSheet(); });
+    b.type = "button"; b.role = "tab"; b.textContent = name;
+    b.setAttribute("aria-selected", String(name === state.tab));
+    b.addEventListener("click", () => { state.tab = name; renderTabs(); name === RUNS_TAB ? renderRuns() : renderSheet(); });
     tabs.appendChild(b);
   });
+}
+
+function simpleTable(columns, rows) {
+  const wrap = document.createElement("div");
+  wrap.className = "grid";
+  const tb = document.createElement("table");
+  const head = tb.createTHead().insertRow();
+  columns.forEach(([label]) => { const th = document.createElement("th"); th.textContent = label; head.appendChild(th); });
+  const body = tb.createTBody();
+  rows.forEach((r) => {
+    const tr = body.insertRow();
+    columns.forEach(([, get, num]) => {
+      const c = tr.insertCell();
+      const v = get(r);
+      c.textContent = v === null || v === undefined ? "–" : String(v);
+      if (num) c.className = "num";
+    });
+  });
+  wrap.appendChild(tb);
+  return wrap;
+}
+
+async function renderRuns() {
+  const el = $("sheet");
+  el.innerHTML = '<p class="empty">Loading runs…</p>';
+  const data = await (await fetch(STATIC ? "data/runs.json" : "api/runs")).json();
+  el.innerHTML = "";
+  const h = document.createElement("h3"); h.textContent = "Model comparison: speed and answer quality"; el.appendChild(h);
+  const note = document.createElement("p"); note.className = "muted";
+  note.textContent = "Quality is the Gym verifier's reward (0–1) for questions in the evaluation bank: correct facts, grounding, tool choice, valid calls, efficiency. Model time is time spent waiting on the model; tool time is the deterministic analytics.";
+  el.appendChild(note);
+  if (!data.runs.length) { el.insertAdjacentHTML("beforeend", '<p class="empty">No runs yet. Ask a question, or run python -m demo_app.bench.</p>'); return; }
+  el.appendChild(simpleTable([
+    ["Label", (r) => r.label], ["Model", (r) => r.model], ["Runs", (r) => r.runs, 1],
+    ["Median time (s)", (r) => r.median_duration_s, 1], ["Median model time (s)", (r) => r.median_llm_s, 1],
+    ["Model turns", (r) => r.mean_llm_turns, 1], ["Tool calls", (r) => r.mean_tool_calls, 1],
+    ["Tokens / s", (r) => r.median_tokens_per_s, 1], ["No unsupported numbers %", (r) => r.grounded_pct, 1],
+    ["Mean quality", (r) => r.mean_reward, 1], ["Scored runs", (r) => r.scored_runs, 1],
+  ], data.summary));
+  const h4 = document.createElement("h4"); h4.textContent = "Individual runs (newest first)"; el.appendChild(h4);
+  el.appendChild(simpleTable([
+    ["When (UTC)", (r) => r.ts.replace("T", " ").replace("+00:00", "")], ["Label", (r) => r.label],
+    ["Question", (r) => r.question], ["Time (s)", (r) => r.duration_s, 1], ["Model (s)", (r) => r.llm_s, 1],
+    ["Tools (s)", (r) => r.tool_s, 1], ["Turns", (r) => r.llm_turns, 1], ["Tools used", (r) => r.tools_used.join(", ")],
+    ["Grounding", (r) => r.grounding], ["Quality", (r) => r.quality ? r.quality.reward : null, 1],
+    ["Facts correct", (r) => r.quality ? `${r.quality.checks_passed}/${r.quality.checks_total}` : null, 1],
+  ], data.runs));
 }
 
 function renderSheet() {
@@ -150,7 +199,7 @@ async function loadPack(ev) {
 
 function backendOverrides() {
   const b = $("backend").value;
-  if (b === "ollama") return { provider: "vllm", base_url: "http://localhost:11434/v1", model: "nemotron-3-nano:4b" };
+  if (b === "ollama") return { provider: "vllm", base_url: "http://localhost:11434/v1", model: $("ollamamodel").value.trim() };
   if (b === "vllm") return { provider: "vllm", base_url: $("baseurl").value };
   return { provider: "mock" };
 }
@@ -167,7 +216,7 @@ async function ask() {
         + "Run the app locally (python -m demo_app.server) to ask your own.");
     } else {
       const r = await fetch("api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, mode: $("mode").value, ...backendOverrides() }) });
+        body: JSON.stringify({ question, mode: $("mode").value, label: $("label").value.trim() || null, ...backendOverrides() }) });
       if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
       a = await r.json();
     }
@@ -175,7 +224,9 @@ async function ask() {
     const trace = a.tool_calls.map((c) => `<li class="${c.status === "ok" ? "" : "err"}">${esc(c.tool_name)}(${esc(JSON.stringify(c.parameters || c.arguments_requested || {}))}) · ${esc(c.status)} · ${esc(c.call_id)}</li>`).join("");
     $("answer").innerHTML = `
       <div class="meta"><span class="pill ${esc(g)}">${esc(g)}</span><span>${esc(a.provider.provider)}:${esc(a.provider.model)}</span>
-        <span>${esc(a.duration_s)}s${STATIC ? " (recorded)" : ""}</span><span>${a.tool_calls.length} tool calls</span>
+        <span>${esc(a.duration_s)}s${STATIC ? " (recorded)" : ""}${a.timing ? ` (model ${esc(a.timing.llm_s)}s, tools ${esc(a.timing.tool_s)}s, ${esc(a.timing.llm_turns)} turns)` : ""}</span>
+        <span>${a.tool_calls.length} tool calls</span>
+        ${a.quality ? `<span>quality ${esc(a.quality.reward)} · facts ${esc(a.quality.checks_passed)}/${esc(a.quality.checks_total)}</span>` : (a.timing ? "<span>quality: not in evaluation bank</span>" : "")}
         ${a.specialists.length ? `<span>specialists: ${esc(a.specialists.join(", "))}</span>` : ""}</div>
       <div class="text"></div>
       <details><summary>Tool trace</summary><ul class="trace">${trace}</ul></details>`;
@@ -206,7 +257,10 @@ async function init() {
     b.addEventListener("click", () => { $("question").value = q; });
     $("chips").appendChild(b);
   });
-  $("backend").addEventListener("change", () => { $("urlrow").hidden = $("backend").value !== "vllm"; });
+  $("backend").addEventListener("change", () => {
+    $("urlrow").hidden = $("backend").value !== "vllm";
+    $("ollamarow").hidden = $("backend").value !== "ollama";
+  });
   $("pick").addEventListener("submit", loadPack);
   $("askbtn").addEventListener("click", ask);
   loadPack();

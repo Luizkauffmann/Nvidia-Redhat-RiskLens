@@ -7,7 +7,8 @@ What the static site contains:
 
 * the attribution pack (same JSON as `GET /api/pack`) for every reporting-date pair and framework,
 * the Excel pack for each (same file as `GET /api/export.xlsx`),
-* recorded agent runs for the demo questions (same JSON as `POST /api/ask`, mock planner, team and single agent).
+* recorded agent runs for the demo questions (same JSON as `POST /api/ask`, mock planner, team and single agent),
+* the committed model-run baselines (`demo_app/baselines/*/runs.jsonl`, same JSON as `GET /api/runs`).
 
 The page runs `demo_app/static/app.js` in snapshot mode: it reads these files instead of calling the server.
 It cannot answer new questions; that needs the live server (`python -m demo_app.server`).
@@ -22,7 +23,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from demo_app import server
+from demo_app import runlog, server
 from demo_app.pack import build_pack
 from src.tools import call_tool
 
@@ -64,10 +65,14 @@ def export(out: Path, frameworks: list[str] | None = None) -> dict:
     for mode in ("team", "orchestrator"):
         answers[mode] = {}
         for q in server.DEMO_QUESTIONS:
-            a = server.ask(server.AskRequest(question=q, mode=mode, provider="mock"))
+            a = server.ask(server.AskRequest(question=q, mode=mode, provider="mock", log_run=False))
             answers[mode][q] = a
             print(f"ask [{mode}] {q} -> {a['status']}, grounding {(a['grounding'] or {}).get('status')}")
     (data / "answers.json").write_text(json.dumps(answers))
+
+    baseline_runs = [json.loads(line) for f in sorted((ROOT / "demo_app" / "baselines").glob("*/runs.jsonl"))
+                     for line in f.read_text().splitlines() if line.strip()]
+    (data / "runs.json").write_text(json.dumps({"summary": runlog.summary(baseline_runs), "runs": baseline_runs[::-1]}))
 
     manifest = {**ctx, "demo_questions": server.DEMO_QUESTIONS, "packs": packs,
                 "llm": {"provider": "snapshot", "model": "mock planner (recorded)"},
