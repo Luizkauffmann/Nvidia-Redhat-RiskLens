@@ -2,7 +2,7 @@
 
 **Explain every dollar of credit loss.**
 
-Built at the **NVIDIA × Red Hat Small Models Hack** (Raleigh, October 17–18, 2026).
+Built by team **Residual Zero** at the **NVIDIA × Red Hat Small Models Hack** (Raleigh, October 17–18, 2026).
 
 Banks can calculate their CECL credit-loss allowance. Explaining *why it moved* is still a manual, multi-team exercise: Finance, Credit Risk, Model Risk and economists each pull their own numbers and try to make them add up. RiskLens puts a small open model (**NVIDIA Nemotron 3.5 Lightning, 30B total / ~3B active**) in front of 29 deterministic risk-analytics tools. The model plans the investigation, picks the tools, recovers from bad calls and writes the explanation. The tools do every calculation. Every figure in an answer is checked against the tool results before it is shown, and the driver attribution reconciles to the booked allowance to the cent.
 
@@ -216,7 +216,7 @@ The injected story: worse macro forecasts (unemployment up most, CRE prices down
 
 ---
 
-## Team
+## Team: Residual Zero
 
 | Name | Role | Contact |
 |---|---|---|

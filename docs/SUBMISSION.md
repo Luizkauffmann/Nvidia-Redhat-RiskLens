@@ -6,7 +6,7 @@ Due **Sunday, October 18, 11:00 AM ET**, one submission per team, via the Airtab
 
 | Item | Status |
 |---|---|
-| Team name | _fill in_ |
+| Team name | Residual Zero |
 | Project description | draft below |
 | Challenge selected | Tool-Calling (+ bounties: Nemotron Lightning, Red Hat vLLM) |
 | 3–5 min demo video, unlisted YouTube/Vimeo, core loop live | script below; record after the Brev run |
@@ -28,7 +28,7 @@ Due **Sunday, October 18, 11:00 AM ET**, one submission per team, via the Airtab
 
 Follow the organisers' flow: team → pitch → live demo → how it was built → so what.
 
-**1. Team (20–30 s).** Names and roles. "We built RiskLens, a tool-calling investigator for credit-loss allowance."
+**1. Team (20–30 s).** "We are Residual Zero" + names and roles. "We built RiskLens, a tool-calling investigator for credit-loss allowance."
 
 **2. Pitch (30 s).** "Every month a bank's CECL allowance moves, and five teams spend days explaining why. We gave a 3B-active Nemotron model 29 risk tools and one rule: never compute a number yourself."
 
