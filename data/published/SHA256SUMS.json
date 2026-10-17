@@ -1,0 +1,17 @@
+{
+  "allowance_summary.csv": "176f80fcf37c2f904a6b659afd9b840e62f846c57063e27f907302ea9c7e6f35",
+  "counterparties.parquet": "057cc1d3eb719b41943dae3415ab8198c571830b5b3e71c770b54133de3fcad8",
+  "ecl_results.parquet": "cc9a9ffa66b8d99fb85712f418dd52b9ef4fbe97f37bf1c62416011fb0eb6ad8",
+  "ground_truth.json": "ebcf7e65004f5734d3621bf26b71ba2a9601e83de8f0fffbd9d7b5695dafeb5a",
+  "loan_snapshots.parquet": "cf6a675188d8e9e2866aceaf48c9c6c5dd3f49bde9f07b7e93a876e2721849af",
+  "macro_scenarios.csv": "44f552bae5e56279793a814ac59f83c5e8eb66071b04b8a4cb72a540d0aaa2ae",
+  "management_overlays.csv": "3898a7ced8e191856f426edf8cf0aa407625cc32ebeae112297500ed2c01c89e",
+  "model_assignments.csv": "92b86475a57da51061250bf4d034095c3ca65a3a078a9fc2456b88ce7e288239",
+  "model_metadata.csv": "834c63ecff5aa3239e57e8be3e6f6c93fac0c869302bcf4ef44b0c95a241cbbe",
+  "model_parameters.csv": "2568bb3420085bd33e83075a88f9e6960b36077fdb6b281d5af61f30a36290bf",
+  "samples/counterparties_sample.csv": "14fde45090cfce7b27ac875adc9ce3d658f0f6e604005404888e1ae1f16ac452",
+  "samples/ecl_results_sample.csv": "5ceaa3e06257f062b81dec13697ca46a13179c8fe7088a62dd2a8832982bcf7c",
+  "samples/loans_2026-07-31_sample.csv": "2cdab3d71df653ad01be611cec35c894ec3fec9de59f5807b8c6dd06392d293b",
+  "samples/loans_2026-08-31_sample.csv": "19d1adf67c7d66139efa6763fda7f5dd1599a6a342400b722c3f8c2314c0ce1f",
+  "scenario_weights.csv": "39bfaea6ca6a04b96f7995c8ae356c4b680c3e1f980cc0cb2ca23c22e306cfef"
+}

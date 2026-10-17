@@ -1,0 +1,19 @@
+model_id,model_type,portfolio,version,deployment_date,calibration_date,status,description
+MORT_PD_v3,PD,Mortgage,3,2025-03-01,2025-01-31,ACTIVE,"Mortgage PD scorecard (FICO, LTV, DTI) with macro overlay"
+MORT_LGD_v2,LGD,Mortgage,2,2024-06-01,2024-04-30,ACTIVE,"Mortgage LGD, LTV-driven with HPI sensitivity"
+AUTO_PD_v2,PD,Auto,2,2024-09-01,2024-07-31,ACTIVE,Auto PD scorecard
+AUTO_LGD_v2,LGD,Auto,2,2024-09-01,2024-07-31,ACTIVE,Auto LGD
+CONS_PD_v2,PD,Consumer,2,2025-01-15,2024-12-31,ACTIVE,Unsecured personal loan PD
+CONS_LGD_v1,LGD,Consumer,1,2023-05-01,2023-03-31,ACTIVE,Unsecured personal loan LGD
+CC_PD_v5,PD,Credit Card,5,2025-06-01,2025-04-30,ACTIVE,"Credit card PD (FICO, utilization, DTI)"
+CC_PD_v4,PD,Credit Card,4,2023-06-01,2023-04-30,RETIRED,Superseded by CC_PD_v5 in 2025-06
+CC_LGD_v3,LGD,Credit Card,3,2024-02-01,2023-12-31,ACTIVE,Credit card LGD
+CI_PD_v3,PD,C&I,3,2025-02-01,2024-12-31,ACTIVE,"C&I PD (rating, DSCR, leverage, watchlist)"
+CI_LGD_v2,LGD,C&I,2,2024-02-01,2023-12-31,ACTIVE,C&I LGD
+LEASE_LGD_v1,LGD,C&I,1,2023-08-01,2023-06-30,ACTIVE,Equipment lease LGD
+CRE_PD_v3,PD,CRE,3,2023-10-01,2023-08-31,RETIRED,Superseded by CRE_PD_v4 in 2025-11
+CRE_PD_v4,PD,CRE,4,2025-11-01,2025-09-30,ACTIVE,"CRE PD (rating, DSCR, LTV, watchlist, CRE price index)"
+CRE_PD_v5,PD,CRE,5,,2026-06-30,IN_VALIDATION,Candidate CRE PD model; not approved for production use
+CRE_LGD_v3,LGD,CRE,3,2025-11-01,2025-09-30,ACTIVE,"CRE LGD, LTV-driven with CRE price sensitivity"
+EAD_BAL_v1,EAD,ALL,1,2023-01-01,,ACTIVE,Contractual balance EAD
+EAD_CCF_v2,EAD,Credit Card / C&I,2,2024-01-01,2023-11-30,ACTIVE,CCF EAD for revolving products

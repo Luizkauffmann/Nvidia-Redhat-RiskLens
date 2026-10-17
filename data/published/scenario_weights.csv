@@ -1,0 +1,7 @@
+as_of_date,scenario_set_id,scenario,weight,approved_by,approval_date
+2026-07-31,SCN_202607,baseline,0.6,ALLL Committee (synthetic),2026-07-28
+2026-07-31,SCN_202607,adverse,0.3,ALLL Committee (synthetic),2026-07-28
+2026-07-31,SCN_202607,severe_adverse,0.1,ALLL Committee (synthetic),2026-07-28
+2026-08-31,SCN_202608,baseline,0.58,ALLL Committee (synthetic),2026-08-28
+2026-08-31,SCN_202608,adverse,0.3,ALLL Committee (synthetic),2026-08-28
+2026-08-31,SCN_202608,severe_adverse,0.12,ALLL Committee (synthetic),2026-08-28

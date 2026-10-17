@@ -1,0 +1,327 @@
+{
+  "seed": 20260831,
+  "previous_date": "2026-07-31",
+  "current_date": "2026-08-31",
+  "design": {
+    "primary_driver": "macroeconomic",
+    "primary_portfolio": "CRE",
+    "primary_macro_variable": "unemployment_rate",
+    "model_changed": false,
+    "scenario_weights_changed": true,
+    "overlays_changed": false,
+    "largest_borrower": "CP_040408",
+    "deteriorated_cre_borrowers": [
+      "CP_040408",
+      "CP_040262",
+      "CP_040312",
+      "CP_040209",
+      "CP_040182",
+      "CP_040488",
+      "CP_040469",
+      "CP_040860",
+      "CP_040560",
+      "CP_040388",
+      "CP_040793",
+      "CP_040852",
+      "CP_040619",
+      "CP_040160",
+      "CP_040265",
+      "CP_040409",
+      "CP_040254",
+      "CP_040607",
+      "CP_040552",
+      "CP_040516"
+    ],
+    "new_cre_exposure": 40000000
+  },
+  "events": {
+    "renewals": 517,
+    "exits": {
+      "matured": 1331,
+      "paid_off": 329,
+      "charged_off": 40
+    },
+    "exit_balance": 74591010.35,
+    "cohort": [
+      {
+        "counterparty_id": "CP_040408",
+        "rating_notch_from": 11,
+        "rating_notch_to": 14,
+        "dscr_drop": 0.17,
+        "property_value_decline": 0.09,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040262",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.116,
+        "property_value_decline": 0.046,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040312",
+        "rating_notch_from": 12,
+        "rating_notch_to": 14,
+        "dscr_drop": 0.115,
+        "property_value_decline": 0.049,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040209",
+        "rating_notch_from": 11,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.086,
+        "property_value_decline": 0.053,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040182",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.089,
+        "property_value_decline": 0.057,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040488",
+        "rating_notch_from": 12,
+        "rating_notch_to": 14,
+        "dscr_drop": 0.101,
+        "property_value_decline": 0.056,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040469",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.102,
+        "property_value_decline": 0.044,
+        "watchlist": false,
+        "dpd_30_59": true,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040860",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.08,
+        "property_value_decline": 0.051,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040560",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.078,
+        "property_value_decline": 0.049,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040388",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.077,
+        "property_value_decline": 0.048,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 3
+      },
+      {
+        "counterparty_id": "CP_040793",
+        "rating_notch_from": 12,
+        "rating_notch_to": 14,
+        "dscr_drop": 0.073,
+        "property_value_decline": 0.054,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040852",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.108,
+        "property_value_decline": 0.05,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 4
+      },
+      {
+        "counterparty_id": "CP_040619",
+        "rating_notch_from": 11,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.11,
+        "property_value_decline": 0.069,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040160",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.118,
+        "property_value_decline": 0.051,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040265",
+        "rating_notch_from": 11,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.07,
+        "property_value_decline": 0.061,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040409",
+        "rating_notch_from": 11,
+        "rating_notch_to": 12,
+        "dscr_drop": 0.111,
+        "property_value_decline": 0.066,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 4
+      },
+      {
+        "counterparty_id": "CP_040254",
+        "rating_notch_from": 12,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.081,
+        "property_value_decline": 0.052,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 1
+      },
+      {
+        "counterparty_id": "CP_040607",
+        "rating_notch_from": 11,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.089,
+        "property_value_decline": 0.064,
+        "watchlist": true,
+        "dpd_30_59": false,
+        "loans": 2
+      },
+      {
+        "counterparty_id": "CP_040552",
+        "rating_notch_from": 12,
+        "rating_notch_to": 14,
+        "dscr_drop": 0.083,
+        "property_value_decline": 0.047,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 3
+      },
+      {
+        "counterparty_id": "CP_040516",
+        "rating_notch_from": 11,
+        "rating_notch_to": 13,
+        "dscr_drop": 0.09,
+        "property_value_decline": 0.06,
+        "watchlist": false,
+        "dpd_30_59": false,
+        "loans": 4
+      }
+    ],
+    "originations": {
+      "count": 1592,
+      "balance": 139406124.32,
+      "by_product": {
+        "Auto Loan": {
+          "count": 520,
+          "sum": 14823552.16
+        },
+        "Commercial Real Estate": {
+          "count": 12,
+          "sum": 40000000.0
+        },
+        "Commercial Term Loan": {
+          "count": 45,
+          "sum": 23030095.0
+        },
+        "Credit Card": {
+          "count": 650,
+          "sum": 2134349.31
+        },
+        "Equipment Lease": {
+          "count": 40,
+          "sum": 8769727.28
+        },
+        "Mortgage": {
+          "count": 110,
+          "sum": 34680304.95
+        },
+        "Personal Loan": {
+          "count": 200,
+          "sum": 2449389.18
+        },
+        "Revolving Credit Facility": {
+          "count": 15,
+          "sum": 13518706.44
+        }
+      }
+    }
+  },
+  "observed_cecl": {
+    "previous_allowance": 99057173.50581983,
+    "current_allowance": 118295195.31788325,
+    "change": 19238021.812063426,
+    "drivers": {
+      "macroeconomic": 10337997.404650971,
+      "credit_deterioration": 7482254.939909115,
+      "paydowns_runoff": -2660129.2143012434,
+      "portfolio_growth": 2193774.534952849,
+      "model_methodology": 1884124.1468517333
+    },
+    "macro_variables": {
+      "unemployment_rate": 4250449.232964665,
+      "cre_price_growth": 3065208.8705858886,
+      "gdp_growth": 2190293.045399815,
+      "interest_rate": 609998.8759934008,
+      "hpi_growth": 193908.96841187775,
+      "inflation": 28138.411295324564
+    },
+    "portfolio_change": {
+      "Auto": 573041.8066400756,
+      "C&I": 1642799.9444694887,
+      "CRE": 13891313.914352875,
+      "Consumer": 244534.5784773758,
+      "Credit Card": 1365695.8178529008,
+      "Mortgage": 1520635.750270714
+    },
+    "top_borrowers_by_ecl_change": {
+      "CP_040408": 1195299.2982333514,
+      "CP_040469": 1037911.6483003107,
+      "CP_038825": 926827.360770218,
+      "CP_040409": 553641.6514743351,
+      "CP_040679": 492596.9811685835,
+      "CP_040793": 392635.9920151733,
+      "CP_040852": 351663.10414502205,
+      "CP_040607": 298733.526495573,
+      "CP_040262": 295487.12151672016,
+      "CP_040182": 252820.36009136497
+    },
+    "residual": 0.0
+  }
+}

@@ -1,0 +1,17 @@
+as_of_date,product_type,portfolio,pd_model_id,lgd_model_id,ead_model_id,model_run_date
+2026-07-31,Mortgage,Mortgage,MORT_PD_v3,MORT_LGD_v2,EAD_BAL_v1,2026-08-04
+2026-07-31,Auto Loan,Auto,AUTO_PD_v2,AUTO_LGD_v2,EAD_BAL_v1,2026-08-04
+2026-07-31,Personal Loan,Consumer,CONS_PD_v2,CONS_LGD_v1,EAD_BAL_v1,2026-08-04
+2026-07-31,Credit Card,Credit Card,CC_PD_v5,CC_LGD_v3,EAD_CCF_v2,2026-08-04
+2026-07-31,Commercial Term Loan,C&I,CI_PD_v3,CI_LGD_v2,EAD_BAL_v1,2026-08-04
+2026-07-31,Revolving Credit Facility,C&I,CI_PD_v3,CI_LGD_v2,EAD_CCF_v2,2026-08-04
+2026-07-31,Equipment Lease,C&I,CI_PD_v3,LEASE_LGD_v1,EAD_BAL_v1,2026-08-04
+2026-07-31,Commercial Real Estate,CRE,CRE_PD_v4,CRE_LGD_v3,EAD_BAL_v1,2026-08-04
+2026-08-31,Mortgage,Mortgage,MORT_PD_v3,MORT_LGD_v2,EAD_BAL_v1,2026-09-04
+2026-08-31,Auto Loan,Auto,AUTO_PD_v2,AUTO_LGD_v2,EAD_BAL_v1,2026-09-04
+2026-08-31,Personal Loan,Consumer,CONS_PD_v2,CONS_LGD_v1,EAD_BAL_v1,2026-09-04
+2026-08-31,Credit Card,Credit Card,CC_PD_v5,CC_LGD_v3,EAD_CCF_v2,2026-09-04
+2026-08-31,Commercial Term Loan,C&I,CI_PD_v3,CI_LGD_v2,EAD_BAL_v1,2026-09-04
+2026-08-31,Revolving Credit Facility,C&I,CI_PD_v3,CI_LGD_v2,EAD_CCF_v2,2026-09-04
+2026-08-31,Equipment Lease,C&I,CI_PD_v3,LEASE_LGD_v1,EAD_BAL_v1,2026-09-04
+2026-08-31,Commercial Real Estate,CRE,CRE_PD_v4,CRE_LGD_v3,EAD_BAL_v1,2026-09-04

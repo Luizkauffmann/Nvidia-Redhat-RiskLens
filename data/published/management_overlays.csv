@@ -1,0 +1,5 @@
+as_of_date,overlay_id,portfolio,amount,reason
+2026-07-31,OVL_CRE_OFFICE,CRE,1500000,Office sector refinancing risk not captured by CRE_PD_v4
+2026-07-31,OVL_CONSUMER_STUDENT,Consumer,400000,Student-loan repayment restart impact on unsecured consumer
+2026-08-31,OVL_CRE_OFFICE,CRE,1500000,Office sector refinancing risk not captured by CRE_PD_v4
+2026-08-31,OVL_CONSUMER_STUDENT,Consumer,400000,Student-loan repayment restart impact on unsecured consumer

@@ -8,6 +8,16 @@ Specialized small-model agents investigate why the credit-loss allowance moved. 
 >
 > **New to the team?** Start with [`docs/PROJECT_ARCHITECTURE.md`](docs/PROJECT_ARCHITECTURE.md), then [`docs/NEMO_GYM.md`](docs/NEMO_GYM.md).
 
+| Submission | |
+|---|---|
+| **Team** | Residual Zero |
+| **Challenge track** | 🕸️ Multi-Agent Systems (with heavy Tool-Calling instrumentation) |
+| **Bounties** | Best Use of NVIDIA Nemotron Lightning · Best Use of Red Hat vLLM · Best Model Improvement With NVIDIA NeMo Gym |
+| **Model** | NVIDIA Nemotron 3.5 Lightning, 30B total / ~3B active (within the 33B limit); one shared base model for every agent |
+| **Serving** | Red Hat vLLM on NVIDIA Brev (`deploy/brev_serve_nemotron.sh`) or the NVIDIA API catalog |
+| **Data** | Synthetic and seeded, published in [`data/published/`](data/published); data card in [`docs/DATA.md`](docs/DATA.md) |
+| **Demo video** | _add unlisted YouTube/Vimeo link_ |
+
 ## Quick start (local)
 
 ```bash
@@ -158,6 +168,75 @@ tests/       engine, data, attribution vs ground truth, reconciliation, tools, a
 docs/        PROJECT_ARCHITECTURE.md (team guide), NEMO_GYM.md, ARCHITECTURE.md (engine/tool internals), LEGACY_AUDIT.md
 ```
 
+## Architecture
+
+```mermaid
+flowchart LR
+    U[Risk analyst] -->|question| O
+    subgraph Team["Agent team: one Nemotron base model, many roles (src/agents)"]
+      O[Orchestrator] -->|ask_portfolio_agent| P[Portfolio]
+      O -->|ask_credit_agent| C[Credit]
+      O -->|ask_macro_agent| M[Macro]
+      O -->|ask_model_risk_agent| MR[Model Risk]
+      O -->|ask_reconciliation_agent| R[Reconciliation]
+      O -->|ask_quant_agent| Q[Quant Analyst<br/>sandboxed pandas]
+      O -->|ask_reporting_agent| X[Reporting<br/>Excel pack]
+    end
+    P & C & M & MR & R & Q & X --> T[33 JSON tools<br/>validate · repair · provenance]
+    T --> E[CECL + IFRS 9 engine<br/>counterfactual attribution]
+    E --> D[(Synthetic bank data<br/>booked runs)]
+    O --> G{Grounding check:<br/>every figure in a<br/>tool result?}
+    G -->|no: one revision| O
+    G -->|yes| A[Answer: FACT / INTERPRETATION<br/>+ tool provenance]
+    T -.same tools as endpoints.-> GY[NeMo Gym resources server<br/>/verify reward vs ground truth]
+    subgraph Serving
+      V[Red Hat vLLM on NVIDIA Brev]
+      N[NVIDIA API catalog]
+    end
+    Team -.OpenAI-compatible API.- V
+    Team -.- N
+```
+
+**Tech stack:** Python, numpy, pandas, pyarrow, PyYAML, openpyxl; `openai` client against OpenAI-compatible endpoints; FastAPI/uvicorn for the policy endpoint; NVIDIA NeMo Gym; Jupyter; pytest + GitHub Actions. Model: NVIDIA Nemotron 3.5 Lightning served by vLLM (Red Hat AI Inference Server engine) on NVIDIA Brev, or the NVIDIA API catalog.
+
+The specialists exchange structured findings; each finding carries the tool results it was built from, so the orchestrator's grounding check can trace every number back to a tool call. More diagrams (system map, traditional run vs agents, question flow, Gym loop): [`docs/PROJECT_ARCHITECTURE.md`](docs/PROJECT_ARCHITECTURE.md). Engine and tool internals: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Data and provenance
+
+All data is **synthetic**, produced by the seeded generator in `src/data/generator.py` and the official-run pipeline in `src/pipeline/cecl_run.py` from `config/demo_story.yaml` (seed `20260831`). No real borrower, bank or market data is used. The working copy is regenerated locally (`data/generated/`, git-ignored); a published snapshot with CSV samples and SHA-256 checksums is committed in [`data/published/`](data/published) (`python -m scripts.publish_data`).
+
+| Published file | Contents |
+|---|---|
+| `loan_snapshots.parquet` | 50,000 July + 49,892 August loans, 38 fields (balances, terms, FICO/DTI/LTV, rating/DSCR/leverage, delinquency, model ids) |
+| `counterparties.parquet` | Borrower master per date: retail customers and companies (invented names) |
+| `macro_scenarios.csv`, `scenario_weights.csv` | 6 variables × 3 scenarios × 12 quarters × 2 forecast vintages; committee weights |
+| `model_metadata.csv`, `model_assignments.csv`, `model_parameters.csv` | Model inventory, which model each product used, scorecard parameters |
+| `management_overlays.csv` | Qualitative overlays |
+| `ecl_results.parquet`, `allowance_summary.csv` | The booked CECL and IFRS 9 runs |
+| `ground_truth.json` | The injected story, evaluation only (tools, agents and the Gym server never read it) |
+
+Injected story: worse macro forecasts (unemployment up most, CRE prices down), 20 CRE office/retail borrowers deteriorating, $40M of new CRE plus other originations, normal runoff, scenario weights shifted toward severe, and no model change. Full data card, field list and methodology: [`docs/DATA.md`](docs/DATA.md).
+
+## Known limitations
+
+- **Live Nemotron results are pending.** Agents, team and Gym environment are tested with the mock planner and scripted fake models; scores from Nemotron on Brev still need to be run and added here.
+- **Pre-event code.** The engine, data generator, tools and single agent were written before the event and imported in one labelled commit (see Provenance above). Everything after that commit (NeMo Gym environment, notebooks, agent team, sandbox, Excel pack, published data) was built at the hackathon.
+- **No web UI.** Interaction is through notebooks and the command line.
+- **No model training yet.** The Gym environment and SFT export exist; LoRA/RL runs on Nemotron Lightning were not done (full RL needs far more GPUs than hackathon credits).
+- **Simplified CECL engine.** Annual steps, logistic scorecards with a linear macro shift: transparent and auditable, not a production model.
+- **Attribution order is a choice.** The sequential waterfall is exact but order-dependent; reverse order and Shapley are reported next to it.
+- **Synthetic data with one designed story**; real portfolios are messier.
+- **First-call latency:** the Shapley attributions take ~75 s once (`scripts.precompute_analytics` caches them). NeMo Gym needs Python ≥ 3.13.14.
+
+Next steps are in the roadmap below.
+
+## Team: Residual Zero
+
+| Name | Role | Contact |
+|---|---|---|
+| Luiz Kauffmann | Lead: architecture, CECL analytics, agents | _add contact_ |
+| _add teammate_ | | |
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -170,6 +249,6 @@ docs/        PROJECT_ARCHITECTURE.md (team guide), NEMO_GYM.md, ARCHITECTURE.md 
 | 6 | NVIDIA Nemotron 3.5 Lightning via Red Hat vLLM / NIM on Brev | |
 | 7 | Evaluation vs ground truth: NeMo Gym environment + verifier, in-process evaluator, rollouts → SFT data | ✅ environment + mock baseline; Nemotron scores pending |
 
-All data is synthetic. Ground truth (`data/ground_truth/`) is for evaluation only; tools and agents must not read it (a test enforces this for `src/tools`).
+All data is synthetic (published snapshot in `data/published/`). Ground truth (`data/ground_truth/`) is for evaluation only; tools and agents must not read it (a test enforces this for `src/tools`).
 
 Licensed under Apache-2.0 (see `LICENSE`).
