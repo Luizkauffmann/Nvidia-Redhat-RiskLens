@@ -17,7 +17,7 @@ Due **Sunday, October 18, 11:00 AM ET**, one submission per team, via the Airtab
 | README: datasets / synthetic data + provenance | ✅ (`docs/DATA.md`, snapshot in `data/published/`) |
 | README: known limitations & next steps | ✅ |
 | Deployed URL or short screen capture | _record notebook 02 or `scripts.ask --trace` against vLLM_ |
-| Team roster (names, roles, contacts) | ✅ names and contacts in README; roles for Andre and Gus still to add |
+| Team roster (names, roles, contacts) | ✅ |
 | Live Nemotron numbers (agent eval + Gym reward) | _run on Brev, add to README_ |
 | Pre-event code import | _confirm with organizers in Discord that the labelled import is acceptable_ |
 

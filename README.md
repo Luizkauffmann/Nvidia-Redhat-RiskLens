@@ -235,8 +235,8 @@ Next steps are in the roadmap below.
 | Name | Role | Contact |
 |---|---|---|
 | Luiz Henrique Outi Kauffmann | Lead: architecture, CECL analytics, agents | luizhenrique.outikauffmann@gmail.com |
-| Andre John de Souza | _add role_ | ajsouz@gmail.com |
-| Gus Cavanaugh | _add role_ | gus.cavanaugh@dataiku.com |
+| Andre John de Souza | AI Architect, Forward Deployed Engineer | ajsouz@gmail.com |
+| Gus Cavanaugh | Business Development Leader | gus.cavanaugh@dataiku.com |
 
 ## Roadmap
 
