@@ -54,6 +54,12 @@ agents:
       - calculate_portfolio_attribution
       - reconcile_allowance_change
       - build_attribution_workbook
+      - search_regulation
+      - get_regulatory_passage
+      - find_guidance_citing
+      - list_regulatory_documents
+      - get_scenario_factors
+      - apply_scenario_factors
   portfolio_agent:
     description: 'Exposure movements: balances, originations, runoff, EAD, segment attribution.'
     tools:
@@ -104,6 +110,8 @@ agents:
       - get_model_metadata
       - calculate_segment_attribution
       - calculate_portfolio_attribution
+      - get_scenario_factors
+      - apply_scenario_factors
   model_risk_agent:
     description: 'Governance: model versions and parameters, overlays, scenario weights, engine reproduction.'
     tools:
@@ -148,3 +156,10 @@ agents:
       - get_allowance_summary
       - compare_allowance
       - build_attribution_workbook
+  regulatory_agent:
+    description: 'Regulation and audit: what the supervisory guidance says (ACL policy statement, CECL capital rules, SR 26-2, ECB/ESRB IFRS 9), with document and page citations.'
+    tools:
+      - search_regulation
+      - get_regulatory_passage
+      - find_guidance_citing
+      - list_regulatory_documents

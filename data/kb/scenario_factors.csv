@@ -1,0 +1,26 @@
+scenario,portfolio,pd_mult,lgd_adj,ead_ccf,source,notes
+baseline,CRE,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Fed 2026 supervisory baseline; no adjustment to base parameters. Neutral factors.
+baseline,C&I,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Fed 2026 supervisory baseline; no adjustment to base parameters. Neutral factors.
+baseline,Mortgage,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Fed 2026 supervisory baseline; no adjustment to base parameters. Neutral factors.
+baseline,Credit Card,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Fed 2026 supervisory baseline; no adjustment to base parameters. Neutral factors.
+baseline,Auto,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Fed 2026 supervisory baseline; no adjustment to base parameters. Neutral factors.
+rates_plus_200bp,CRE,1.25,0.02,,Illustrative team assumption for the hackathon demo; not calibrated.,Short rates +200bp vs baseline. Floating-rate CRE and C&I most exposed to debt-service stress.
+rates_plus_200bp,C&I,1.2,0.01,,Illustrative team assumption for the hackathon demo; not calibrated.,Short rates +200bp vs baseline. Floating-rate CRE and C&I most exposed to debt-service stress.
+rates_plus_200bp,Mortgage,1.1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Short rates +200bp vs baseline. Floating-rate CRE and C&I most exposed to debt-service stress.
+rates_plus_200bp,Credit Card,1.15,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Short rates +200bp vs baseline. Floating-rate CRE and C&I most exposed to debt-service stress.
+rates_plus_200bp,Auto,1.1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Short rates +200bp vs baseline. Floating-rate CRE and C&I most exposed to debt-service stress.
+unemployment_7pct,CRE,1.2,0.02,,Illustrative team assumption for the hackathon demo; not calibrated.,Unemployment rises to 7%. Consumer books most sensitive; card line draws rise (CCF 40% -> 50%).
+unemployment_7pct,C&I,1.3,0.02,,Illustrative team assumption for the hackathon demo; not calibrated.,Unemployment rises to 7%. Consumer books most sensitive; card line draws rise (CCF 40% -> 50%).
+unemployment_7pct,Mortgage,1.35,0.03,,Illustrative team assumption for the hackathon demo; not calibrated.,Unemployment rises to 7%. Consumer books most sensitive; card line draws rise (CCF 40% -> 50%).
+unemployment_7pct,Credit Card,1.6,0.02,0.5,Illustrative team assumption for the hackathon demo; not calibrated.,Unemployment rises to 7%. Consumer books most sensitive; card line draws rise (CCF 40% -> 50%).
+unemployment_7pct,Auto,1.45,0.03,,Illustrative team assumption for the hackathon demo; not calibrated.,Unemployment rises to 7%. Consumer books most sensitive; card line draws rise (CCF 40% -> 50%).
+cre_downturn_30pct,CRE,1.8,0.1,,Illustrative team assumption for the hackathon demo; not calibrated.,Commercial real estate values fall 30%. Collateral shortfall drives CRE LGD up 10 points.
+cre_downturn_30pct,C&I,1.1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Commercial real estate values fall 30%. Collateral shortfall drives CRE LGD up 10 points.
+cre_downturn_30pct,Mortgage,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Commercial real estate values fall 30%. Collateral shortfall drives CRE LGD up 10 points.
+cre_downturn_30pct,Credit Card,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Commercial real estate values fall 30%. Collateral shortfall drives CRE LGD up 10 points.
+cre_downturn_30pct,Auto,1,0,,Illustrative team assumption for the hackathon demo; not calibrated.,Commercial real estate values fall 30%. Collateral shortfall drives CRE LGD up 10 points.
+fed_2026_severely_adverse,CRE,2.2,0.12,,Illustrative team assumption for the hackathon demo; not calibrated.,"Fed 2026 severely adverse scenario. Directionally informed by the Fed 2026 severely adverse path: unemployment peaks at 10.0%, house prices -25%, CRE prices -35.7% (2026 Q1-2029 Q1)."
+fed_2026_severely_adverse,C&I,1.9,0.05,,Illustrative team assumption for the hackathon demo; not calibrated.,"Fed 2026 severely adverse scenario. Directionally informed by the Fed 2026 severely adverse path: unemployment peaks at 10.0%, house prices -25%, CRE prices -35.7% (2026 Q1-2029 Q1)."
+fed_2026_severely_adverse,Mortgage,1.7,0.06,,Illustrative team assumption for the hackathon demo; not calibrated.,"Fed 2026 severely adverse scenario. Directionally informed by the Fed 2026 severely adverse path: unemployment peaks at 10.0%, house prices -25%, CRE prices -35.7% (2026 Q1-2029 Q1)."
+fed_2026_severely_adverse,Credit Card,2.1,0.03,0.55,Illustrative team assumption for the hackathon demo; not calibrated.,"Fed 2026 severely adverse scenario. Directionally informed by the Fed 2026 severely adverse path: unemployment peaks at 10.0%, house prices -25%, CRE prices -35.7% (2026 Q1-2029 Q1)."
+fed_2026_severely_adverse,Auto,1.8,0.05,,Illustrative team assumption for the hackathon demo; not calibrated.,"Fed 2026 severely adverse scenario. Directionally informed by the Fed 2026 severely adverse path: unemployment peaks at 10.0%, house prices -25%, CRE prices -35.7% (2026 Q1-2029 Q1)."

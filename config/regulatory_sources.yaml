@@ -1,0 +1,70 @@
+# Regulatory documents loaded into the knowledge base by `python -m scripts.load_kb`.
+# Files live in docs/regulatory/sources (public domain or redistribution permitted; see docs/regulatory/README.md).
+# Each passage is cited as "<label> p.<page>". Copyrighted standards (FASB ASC, IFRS) are never listed here.
+licences:
+  us_public_domain: US government work, public domain (17 U.S.C. 105)
+  eu_attribution: Reproduction permitted provided the source is acknowledged
+documents:
+  us_interagency_policy_statement_ACL_rev2023.pdf:
+    doc_id: ips_acl_2023
+    label: IPS 2023
+    title: Interagency Policy Statement on Allowances for Credit Losses (revised April 2023)
+    issuer: FRB, FDIC, NCUA, OCC
+    framework: CECL
+    effective_from: "2023-04-01"
+    licence: us_public_domain
+    url: https://public-inspection.federalregister.gov/2023-08876.pdf
+  us_interagency_ACL_and_credit_risk_review_2020_release.pdf:
+    doc_id: ips_release_2020
+    label: ACL release 2020
+    title: Agencies issue ACL policy statement and credit risk review guidance (May 2020)
+    issuer: FRB, FDIC, NCUA, OCC
+    framework: CECL
+    effective_from: "2020-05-08"
+    licence: us_public_domain
+    url: https://archive.fdic.gov/view/fdic/15345/fdic_15345_DS1.pdf
+  us_capital_rule_CECL_transition_2019.pdf:
+    doc_id: cecl_capital_2019
+    label: CECL capital rule 2019
+    title: "Regulatory capital rule: CECL implementation and 3-year transition"
+    issuer: FRB, FDIC, OCC
+    framework: capital
+    effective_from: "2019-04-01"
+    licence: us_public_domain
+    url: https://www.govinfo.gov/content/pkg/FR-2019-02-14/pdf/2018-28281.pdf
+  us_capital_rule_CECL_revised_transition_2020.pdf:
+    doc_id: cecl_capital_2020
+    label: CECL capital rule 2020
+    title: "Regulatory capital rule: revised CECL transition (2-year delay + 3-year phase-in)"
+    issuer: FRB, FDIC, OCC
+    framework: capital
+    effective_from: "2020-09-30"
+    licence: us_public_domain
+    url: https://www.govinfo.gov/content/pkg/FR-2020-09-30/pdf/2020-19782.pdf
+  us_SR26-2_model_risk_guidance_2026_FDIC.pdf:
+    doc_id: sr26_2
+    label: SR 26-2
+    title: "Model risk management: revised interagency guidance (SR 26-2, supersedes SR 11-7)"
+    issuer: FRB, OCC, FDIC
+    framework: model_risk
+    effective_from: "2026-04-17"
+    licence: us_public_domain
+    url: https://www.fdic.gov/model-risk-management-revised-guidance.pdf
+  eu_ECB_IFRS9_overlays_novel_risks_2024.pdf:
+    doc_id: ecb_overlays_2024
+    label: ECB overlays 2024
+    title: IFRS 9 overlays and model improvements for novel risks
+    issuer: ECB Banking Supervision
+    framework: IFRS9
+    effective_from: "2024-07-01"
+    licence: eu_attribution
+    url: https://www.bankingsupervision.europa.eu/ecb/pub/pdf/ssm.IFRS9novelrisks_202407~5e0eb30b5c.en.pdf
+  eu_ESRB_wp92_cyclicality_SICR_IFRS9.pdf:
+    doc_id: esrb_wp92
+    label: ESRB WP92
+    title: "ESRB Working Paper 92: cyclicality of SICR under IFRS 9"
+    issuer: European Systemic Risk Board
+    framework: IFRS9
+    effective_from: null
+    licence: eu_attribution
+    url: https://www.esrb.europa.eu/pub/pdf/wp/esrb.wp92~bf769a68b8.en.pdf

@@ -66,7 +66,8 @@ def index() -> FileResponse:
 def context() -> dict[str, Any]:
     rec = call_tool("get_reporting_context", {}, caller="demo_app", log=None)
     provider = get_provider().describe()
-    return {**rec.result, "llm": provider, "demo_questions": DEMO_QUESTIONS}
+    # Live app: core questions plus the knowledge-base ones (the static snapshot replays the core ones only).
+    return {**rec.result, "llm": provider, "demo_questions": runlog.bench_questions("all")}
 
 
 @app.get("/api/pack")

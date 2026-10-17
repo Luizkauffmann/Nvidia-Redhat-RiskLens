@@ -19,7 +19,7 @@ from typing import Any
 
 from src.agents.orchestrator import build_orchestrator
 from src.agents.team import build_team
-from src.evaluation.tasks import build_tasks
+from src.evaluation.tasks import Task, _mention, _money, build_tasks
 from src.evaluation.verifier import from_agent_run, score
 from src.llm.provider import get_provider
 from src.tools import ToolCallLog
@@ -39,6 +39,15 @@ BENCH_QUESTIONS = [
 
 log = logging.getLogger(__name__)
 _TASKS: dict[str, Any] | None = None   # evaluation bank by normalised question, loaded once ground truth exists
+_KB_TASKS: dict[str, Any] | None = None  # knowledge-base suite, cached once the KB answered
+
+# Knowledge-base suite (regulatory agent + scenario factors). Kept separate from the five core questions so
+# the committed core baseline stays comparable. Needs the local KB (python -m scripts.load_kb).
+KB_QUESTIONS = {
+    "kb_reg_reversion": "What does the guidance say about reverting to historical loss information after the forecast period?",
+    "kb_reg_model_risk": "Which supervisory guidance now governs model risk management, and does it replace SR 11-7?",
+    "kb_factor_unemployment": "What would the allowance be if unemployment hits 7%?",
+}
 
 
 def runs_path() -> Path:
@@ -49,21 +58,58 @@ def _norm(q: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", q.lower()).strip()
 
 
+def _kb_tasks() -> list[Task]:
+    """Checks need no ground truth: the citation must name the current document, and the what-if figure is
+    the deterministic tool's own result (computed here, at scoring time only)."""
+    from src.tools import call_tool
+
+    q = KB_QUESTIONS
+    tasks = [
+        Task("kb_reg_reversion", q["kb_reg_reversion"], "regulatory",
+             [_mention("cites the 2023 interagency policy statement", r"IPS 2023 p\.\s?\d+"),
+              _mention("historical loss information beyond the forecast period", r"historical loss"),
+              _mention("no specific reversion technique or period is required",
+                       r"(not|no)\b[^.]{0,60}(specific|particular)[^.]{0,40}(technique|method|period)")],
+             [["search_regulation"]], 3),
+        Task("kb_reg_model_risk", q["kb_reg_model_risk"], "regulatory",
+             [_mention("names SR 26-2", r"SR\s?26-2"), _mention("says it supersedes SR 11-7", r"supersed|replac")],
+             [["search_regulation"]], 3),
+    ]
+    rec = call_tool("apply_scenario_factors", {"factor_scenario": "unemployment_7pct", "as_of_date": "2026-08-31"},
+                    caller="evaluation", log=None)
+    if rec.status == "ok":
+        tasks.append(Task("kb_factor_unemployment", q["kb_factor_unemployment"], "scenario_factors",
+                          [_money(rec.result["scenario_allowance"], "what-if allowance under the 7% unemployment factors"),
+                           _mention("says the factors are a sensitivity / illustrative",
+                                    r"sensitivit|illustrative|first[- ]order|not an engine")],
+                          [["apply_scenario_factors"]], 3))
+    return tasks
+
+
 def _tasks() -> dict[str, Any]:
-    """Evaluation bank keyed by question. Without ground truth, runs are logged unscored and the next call retries."""
-    global _TASKS
+    """Evaluation bank keyed by question: core questions (need ground truth) + knowledge-base questions (need the
+    local KB). A missing source is not cached: those runs are logged unscored and the next call retries."""
+    global _TASKS, _KB_TASKS
     if _TASKS is None:
         try:
             _TASKS = {_norm(t.question): t for t in build_tasks()}
         except Exception as exc:  # e.g. data not generated yet: don't cache the miss
             log.warning("No evaluation ground truth (%s); runs are logged without a quality score. "
                         "Run python -m scripts.generate_demo_data to enable scoring.", exc)
-            return {}
-    return _TASKS
+    if _KB_TASKS is None:
+        try:
+            kb = _kb_tasks()
+            if len(kb) == len(KB_QUESTIONS):          # the factor question needs the KB; retry until it is built
+                _KB_TASKS = {_norm(t.question): t for t in kb}
+        except Exception as exc:
+            log.warning("Knowledge-base questions unscored (%s). Run python -m scripts.load_kb.", exc)
+    return {**(_TASKS or {}), **(_KB_TASKS or {})}
 
 
-def bench_questions() -> list[str]:
-    return list(BENCH_QUESTIONS)
+def bench_questions(suite: str = "core") -> list[str]:
+    """core = the five allowance questions (committed baseline); kb = regulatory + factor questions; all = both."""
+    return {"core": list(BENCH_QUESTIONS), "kb": list(KB_QUESTIONS.values()),
+            "all": list(BENCH_QUESTIONS) + list(KB_QUESTIONS.values())}[suite]
 
 
 def quality(question: str, run: Any) -> dict[str, Any] | None:
