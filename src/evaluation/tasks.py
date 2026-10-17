@@ -93,6 +93,8 @@ def build_tasks(gt: dict[str, Any] | None = None, include_paraphrases: bool = Tr
     top_var = max(obs["macro_variables"], key=obs["macro_variables"].get)
     borrower = d["largest_borrower"]
     pct = 100.0 * change / prev
+    # story variants can hold the macro paths flat: then every variable's impact is exactly zero
+    macro_moved = max(abs(v) for v in obs["macro_variables"].values()) > 1e-6 * abs(change)
     port_pat = PORTFOLIO_PATTERNS.get(top_portfolio, rf"\b{top_portfolio}\b")
 
     T: list[Task] = [
@@ -126,13 +128,16 @@ def build_tasks(gt: dict[str, Any] | None = None, include_paraphrases: bool = Tr
               _mention("mentions balance or exposure", r"balance|exposure|EAD")],
              [["calculate_balance_change", "calculate_new_originations", "compare_portfolios"]], 4),
         Task("q11_macro_variable", "Which macroeconomic variable had the largest impact on the allowance?", "macro",
-             [_mention(f"names {top_var}", VARIABLE_PATTERNS[top_var]),
-              _money(obs["macro_variables"][top_var], "top variable impact", rel_tol=0.06)],
+             ([_mention(f"names {top_var}", VARIABLE_PATTERNS[top_var]),
+               _money(obs["macro_variables"][top_var], "top variable impact", rel_tol=0.06)] if macro_moved else
+              [_mention("says no macro variable moved the allowance",
+                        rf"{NEG}|\bzero\b|negligible|\$0(?:\.0+)?(?:\s*M| million)?\b")]),
              [["calculate_variable_attribution"]], 4),
         Task("q12_weights", "Did the scenario weights change between July and August?", "model_risk",
              [_mention("says weights changed" if d["scenario_weights_changed"] else "says weights unchanged",
                        r"\b(?:yes|changed|shift|moved|increased|raised)\b" if d["scenario_weights_changed"] else NEG),
-              _mention("mentions the severe/adverse scenario", r"severe|adverse|downside")],
+              *([_mention("mentions the severe/adverse scenario", r"severe|adverse|downside")]
+                if d["scenario_weights_changed"] else [])],
              [["compare_scenario_weights"]], 3),
         Task("q13_model_change", "Could this increase just be because we changed models?", "model_risk",
              ([_mention("says no model version changed", rf"{NEG}[^.\n]{{0,80}}model|model[^.\n]{{0,80}}{NEG}"),

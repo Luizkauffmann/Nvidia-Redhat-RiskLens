@@ -224,6 +224,7 @@ __marimo__/
 data/generated/*
 data/outputs/*
 data/ground_truth/*
+data/variants/
 !data/**/.gitkeep
 
 # NeMo Gym: per-server venvs, Hydra run logs, local credentials

@@ -82,7 +82,32 @@ From Python or a notebook, `src.evaluation.gym_runner.run_gym_eval("mock" | "vll
 | Policy | Split | Rollouts | Mean reward | Notes |
 |---|---|---:|---:|---|
 | mock planner (keyword script) | train | 21 | 0.965 | Floor. Fails a paraphrase it has no keyword for ("Which segment drove…") and never says "increased" for PD |
-| Nemotron 3.5 Lightning | example | — | — | Pending: needs the Brev vLLM endpoint or an NVIDIA API key |
+| mock planner | example, each of the 5 story variants | 15 each | 0.988 each | Same as the base story; only miss is the PD template (`evidence/story_variants/mock_baseline.json`) |
+| Nemotron 3.5 Lightning (BF16, vLLM on A100) | example | 15 | 0.977 | Lost points only on q14 (no CRE borrower named), two recovered tool errors and a few ungrounded figures. [Evidence](../evidence/nemotron_baseline/README.md) |
+
+## Story variants
+
+The base story always has the same answer (macro, CRE, unemployment), so a policy could score by reciting it. Story variants keep the bank, dates and questions and change what happened in August, so the correct answers change too:
+
+| Variant | August story | Correct primary driver |
+|---|---|---|
+| `credit_led` | macro and weights flat; 60 CRE borrowers deteriorate sharply | credit deterioration |
+| `growth_led` | macro and weights flat; ~5× the usual new business | portfolio growth |
+| `property_shock` | CRE prices and rates worsen, unemployment flat | macroeconomic, via CRE prices |
+| `weights_shift` | paths flat; weight moved from baseline to severe | model / methodology & judgment |
+| `consumer_stress` | unemployment shock, property flat | macroeconomic, via unemployment |
+
+Each is `config/story_variants/<name>.yaml` merged over `demo_story.yaml` and states its intended outcome under `design:`. `python -m scripts.build_story_variants` generates each variant into `data/variants/<name>/` (data, official runs, caches, ground truth), builds its Gym rows in `resources_servers/risklens_cecl/data/variants/<name>/` (ids prefixed `<name>__`), checks every `design` claim against the engine's attribution and writes [`evidence/story_variants/summary.md`](../evidence/story_variants/summary.md). The base story is untouched.
+
+The questions are the same; the checks follow the variant's ground truth. Where the macro paths are flat, "which macro variable mattered most?" expects "none" (every variable's impact is exactly $0), and "did the weights change?" expects "no".
+
+```bash
+python -m scripts.build_story_variants                      # all five, ~25 s each
+python -c 'from src.evaluation.gym_runner import run_gym_eval
+run_gym_eval("vllm", split="train", variant="credit_led", num_repeats=4)'
+```
+
+`run_gym_eval(..., variant=...)` points the Gym servers at the variant through `RISKLENS_*` env vars and reads that variant's rows.
 
 ## From rollouts to training
 
@@ -90,6 +115,5 @@ From Python or a notebook, `src.evaluation.gym_runner.run_gym_eval("mock" | "vll
 
 ## Next
 
-- Story variants in the generator (credit-led, growth-led, a real model change, C&I instead of CRE), each with its own ground truth, so the policy must investigate instead of memorise.
 - Specialist datasets: `python -m scripts.build_gym_dataset --agent credit_agent` (15 tools instead of 30) to score each Phase 4 specialist.
 - Recovery tasks: rows that start with a malformed call already in the context, scored on whether the model reads the hint and retries.

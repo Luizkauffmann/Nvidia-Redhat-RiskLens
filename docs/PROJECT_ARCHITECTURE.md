@@ -236,7 +236,7 @@ flowchart LR
 | efficiency (0.05) | 1 within the task's call budget, budget/calls beyond |
 | × 0.25 | no successful tool call (answers recalled from memory don't pay); 0 with no answer |
 
-Status: runs end to end with `gym env start` + `gym eval run` (mock planner 0.965 mean reward on 21 train rows). Next: Nemotron scores on Brev, specialist datasets, story variants, SFT export of passing rollouts (`src/evaluation/trajectories.py`), then GRPO with NeMo RL after the event.
+Status: runs end to end with `gym env start` + `gym eval run` (mock planner 0.965 mean reward on 21 train rows; base Nemotron 3.5 Lightning 0.977 on the 15 demo questions, [evidence](../evidence/nemotron_baseline/README.md)). Five story variants built and checked against their design ([`NEMO_GYM.md`](NEMO_GYM.md#story-variants)). Next: Nemotron rollouts on the variants, SFT export of passing rollouts (`src/evaluation/trajectories.py`), full LoRA run, re-score; specialist datasets; GRPO with NeMo RL after the event.
 
 ---|---|
 | Correct conclusion | +1 per ground-truth fact stated correctly (driver, portfolio, variable, borrower, model change, reconciliation) |
