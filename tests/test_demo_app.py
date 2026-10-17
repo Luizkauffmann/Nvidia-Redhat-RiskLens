@@ -1,6 +1,7 @@
 """Offline demo app: the browser pack must match the Excel pack and tie out, and the API must work offline."""
 from __future__ import annotations
 
+import json
 import os
 import re
 from pathlib import Path
@@ -93,3 +94,23 @@ def test_static_assets_load_nothing_from_the_internet():
     for f in Path(STATIC).iterdir():
         urls = re.findall(r"https?://[^\s\"'`)]+", f.read_text())
         assert all(re.match(r"https?://(localhost|127\.0\.0\.1)", u) for u in urls), (f.name, urls)
+
+
+def test_static_export_replays_the_server(tmp_path):
+    from scripts.export_static_demo import export, pack_name
+
+    m = export(tmp_path / "site", frameworks=["CECL"])
+    index = (tmp_path / "site" / "index.html").read_text()
+    assert "window.RISKLENS_STATIC = true" in index and 'src="static/app.js"' in index
+    assert (tmp_path / "site" / "static" / "app.js").exists()
+    data = tmp_path / "site" / "data"
+    snap = json.loads((data / pack_name("CECL", PREV, CURR, "json")).read_text())
+    live = build_pack(PREV, CURR, "CECL")
+    for key in ("previous_allowance", "current_allowance", "change", "residual", "reconciliation", "top_borrower"):
+        assert snap["headline"][key] == live["headline"][key]
+    assert (data / pack_name("CECL", PREV, CURR, "xlsx")).stat().st_size > 0
+    answers = json.loads((data / "answers.json").read_text())
+    for mode in ("team", "orchestrator"):
+        assert set(answers[mode]) == set(m["demo_questions"])
+        assert all(a["tool_calls"] for a in answers[mode].values())
+    assert answers["team"][m["demo_questions"][0]]["grounding"]["status"] == "PASS"
