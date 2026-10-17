@@ -1,0 +1,95 @@
+"""Offline demo app: the browser pack must match the Excel pack and tie out, and the API must work offline."""
+from __future__ import annotations
+
+import os
+import re
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from demo_app.pack import SHEETS, build_pack
+from demo_app.server import STATIC, app
+from src.tools import ToolContext, call_tool, set_context
+from src.utils import config
+from tests.conftest import CURR, PREV
+
+
+@pytest.fixture(scope="module", autouse=True)
+def ctx(generated, attribution, tmp_path_factory):
+    c = ToolContext(data_dir=generated[0], cache_dir=tmp_path_factory.mktemp("cache"), disk_cache=False)
+    c._mem[f"attr_default_CECL_{PREV}_{CURR}"] = attribution
+    set_context(c)
+    old = os.environ.get("RISKLENS_OUTPUT_DIR")
+    os.environ["RISKLENS_OUTPUT_DIR"] = str(tmp_path_factory.mktemp("outputs"))
+    config.reload()
+    yield c
+    set_context(None)
+    if old is None:
+        os.environ.pop("RISKLENS_OUTPUT_DIR", None)
+    else:
+        os.environ["RISKLENS_OUTPUT_DIR"] = old
+    config.reload()
+
+
+@pytest.fixture(scope="module")
+def pack():
+    return build_pack(PREV, CURR, "CECL")
+
+
+def _cells(pack):
+    for sheet in pack["sheets"]:
+        for t in sheet["tables"]:
+            for row in [*t["rows"], *t.get("totals", []), *t.get("tail", [])]:
+                yield sheet["name"], row
+
+
+def test_pack_has_the_excel_sheets(pack):
+    rec = call_tool("build_attribution_workbook", {"previous_date": PREV, "current_date": CURR}, log=None)
+    assert rec.status == "ok"
+    assert [s["name"] for s in pack["sheets"]] == SHEETS == rec.result["sheets"]
+
+
+def test_pack_headline_matches_the_excel_pack(pack):
+    rec = call_tool("build_attribution_workbook", {"previous_date": PREV, "current_date": CURR}, log=None)
+    xl = rec.result["headline"]
+    for key in ("previous_allowance", "current_allowance", "change", "explained_change", "primary_driver",
+                "reconciliation", "top_borrower"):
+        assert pack["headline"][key] == pytest.approx(xl[key]) if isinstance(xl[key], float) else pack["headline"][key] == xl[key]
+
+
+def test_pack_ties_out(pack):
+    h = pack["headline"]
+    assert h["change"] == pytest.approx(h["current_allowance"] - h["previous_allowance"])
+    assert abs(h["residual"]) < 1.0
+    tail = pack["sheets"][1]["tables"][0]["tail"]
+    assert abs(tail[1][1]["v"]) < 1.0                       # walk minus reported current
+
+
+def test_every_tool_output_cites_a_listed_call(pack):
+    ids = {c["call_id"] for c in pack["source_calls"]}
+    inputs = [c for _, row in _cells(pack) for c in row if c["k"] == "input"]
+    assert inputs and all(c["src"] in ids for c in inputs)
+    derived = [c for _, row in _cells(pack) for c in row if c["k"] in ("formula", "link")]
+    assert derived and all(c.get("x") for c in derived)     # every derived figure shows its formula
+
+
+def test_api_works_offline():
+    client = TestClient(app)
+    assert client.get("/").status_code == 200
+    ctx = client.get("/api/context").json()
+    assert PREV in ctx["reporting_dates"] and ctx["demo_questions"]
+    p = client.get("/api/pack", params={"previous_date": PREV, "current_date": CURR}).json()
+    assert p["headline"]["reconciliation"] == "PASS"
+    t = client.post("/api/tool", json={"name": "compare_allowance",
+                                       "arguments": {"previous_date": "July 2026", "current_date": "2026-08"}}).json()
+    assert t["status"] == "ok" and t["parameters"]["previous_date"] == PREV
+    a = client.post("/api/ask", json={"question": "Why did the allowance increase in August?", "provider": "mock"}).json()
+    assert a["status"] == "answered" and a["tool_calls"] and a["grounding"]["status"] == "PASS"
+    assert client.get("/api/pack", params={"previous_date": "1999-01-01", "current_date": CURR}).status_code == 400
+
+
+def test_static_assets_load_nothing_from_the_internet():
+    for f in Path(STATIC).iterdir():
+        urls = re.findall(r"https?://[^\s\"'`)]+", f.read_text())
+        assert all(re.match(r"https?://(localhost|127\.0\.0\.1)", u) for u in urls), (f.name, urls)
