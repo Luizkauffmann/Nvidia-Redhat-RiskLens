@@ -111,6 +111,10 @@ run_gym_eval("vllm", split="train", variant="credit_led", num_repeats=4)'
 
 ## From rollouts to training
 
+`python -m scripts.build_sft_dataset` assembles the SFT set: every `vllm_*_train` / `*_hint` rollout outside the held-out story (`HELD_OUT` in `src/evaluation/story_variants.py`, currently `property_shock`), re-scored with the current verifier, kept at reward ≥ 0.95.
+
+**Hint distillation** (`src/evaluation/hint_distill.py`, `python -m scripts.build_hint_rows`): base Nemotron never drills down to borrowers on "what happened in CRE?" (0 of 16 rollouts named a deteriorated CRE borrower), so its own rollouts hold nothing to learn from. `hint.jsonl` re-asks those questions with one extra sentence in the system prompt; passing rollouts are exported with the original prompt (`verifier_metadata.distill_system`), so the tuned model learns the drill-down unprompted.
+
 `src/evaluation/trajectories.py` keeps rollouts with reward ≥ 0.8 and converts them to OpenAI chat format with tool calls (`data/outputs/gym/sft_trajectories.jsonl`), ready for LoRA SFT. For RL, NeMo RL's GRPO recipes take a Gym resources server as the reward source; full RL on Lightning needs a multi-node GPU budget, so that is post-hackathon.
 
 ## Next

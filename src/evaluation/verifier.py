@@ -81,14 +81,33 @@ def gym_settings() -> dict[str, Any]:
         return {}
 
 
+_UNICODE_SPACES = re.compile(r"[  -   　]")
+_UNICODE_HYPHENS = re.compile(r"[‐‑]")
+
+
+def _mention_texts(answer: str) -> tuple[str, str]:
+    """The answer as plain ASCII spacing/hyphens, and again with in-word hyphens as spaces.
+
+    Nemotron writes "CRE price" and "commercial‑real‑estate"; check patterns use plain
+    spaces ("cre price", "commercial real estate"), so both spellings must match.
+    """
+    plain = _UNICODE_HYPHENS.sub("-", _UNICODE_SPACES.sub(" ", answer))
+    return plain, re.sub(r"(?<=\w)-(?=\w)", " ", plain)
+
+
+def _search(pattern: str, texts: tuple[str, str]) -> bool:
+    return any(re.search(pattern, t, re.I) for t in texts)
+
+
 def _check(check: dict[str, Any], answer: str, rel_tol: float) -> tuple[bool, str]:
     kind = check["type"]
     if kind == "mentions":
-        pats = check["any_of"]
-        hit = next((p for p in pats if re.search(p, answer, re.I)), None)
+        texts = _mention_texts(answer)
+        hit = next((p for p in check["any_of"] if _search(p, texts)), None)
         return hit is not None, (f"matched /{hit}/" if hit else "no pattern matched")
     if kind == "not_mentions":
-        hit = next((p for p in check["none_of"] if re.search(p, answer, re.I)), None)
+        texts = _mention_texts(answer)
+        hit = next((p for p in check["none_of"] if _search(p, texts)), None)
         return hit is None, (f"forbidden /{hit}/ found" if hit else "ok")
     if kind == "number":
         target = float(check["value"])

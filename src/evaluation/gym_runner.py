@@ -191,7 +191,7 @@ def collect_rollouts(input_path: Path | str, output_path: Path | str, limit: int
 def run_gym_eval(policy: Policy | str, split: str = "example", output: Path | str | None = None,
                  limit: int | None = None, num_repeats: int = 1, concurrency: int | None = None,
                  temperature: float | None = None, stream: bool = True, variant: str | None = None) -> Path:
-    """Start the Gym servers, collect rollouts for one split (example | train | validation), stop the servers.
+    """Start the Gym servers, collect rollouts for one split (example | train | validation | hint), stop the servers.
 
     ``variant`` runs a story variant (``scripts/build_story_variants.py`` must have built it): the servers
     read that variant's data through env vars and the rows come from its dataset folder.
@@ -199,12 +199,13 @@ def run_gym_eval(policy: Policy | str, split: str = "example", output: Path | st
     policy = POLICIES[policy] if isinstance(policy, str) else policy
     if variant:
         from src.evaluation.story_variants import dataset_dir, variant_env
-        paths = {s: dataset_dir(variant) / f"{s}.jsonl" for s in ("example", "train", "validation")}
-        if not paths[split].exists():
-            raise FileNotFoundError(f"{paths[split]} missing; run python -m scripts.build_story_variants {variant}")
+        paths = {split: dataset_dir(variant) / f"{split}.jsonl"}
         env, tag = variant_env(variant), f"{variant}_"
     else:
         paths, env, tag = ensure_dataset(), {}, ""
+        paths.setdefault(split, DATA_DIR / f"{split}.jsonl")      # extra splits, e.g. hint.jsonl
+    if not paths[split].exists():
+        raise FileNotFoundError(f"{paths[split]} missing (scripts.build_story_variants / scripts.build_hint_rows)")
     output = Path(output) if output else ROOT / "data" / "outputs" / "gym" / f"{policy.name}_{tag}{split}_rollouts.jsonl"
     saved = {k: os.environ.get(k) for k in env}
     os.environ.update(env)          # inherited by the gym subprocesses via _clean_env()

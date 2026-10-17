@@ -23,7 +23,9 @@ def _text(content: Any) -> str:
 
 def rollout_to_messages(rollout: dict[str, Any]) -> dict[str, Any]:
     params = rollout["responses_create_params"]
-    messages: list[dict[str, Any]] = [{"role": m["role"], "content": _text(m.get("content"))}
+    distill = (rollout.get("verifier_metadata") or {}).get("distill_system")   # hint distillation: drop the hint
+    messages: list[dict[str, Any]] = [{"role": m["role"], "content": distill if distill and m["role"] == "system"
+                                       else _text(m.get("content"))}
                                       for m in params.get("input", []) if m.get("role") in ("system", "user")]
     pending: list[dict[str, Any]] = []
     for item in (rollout.get("response") or {}).get("output", []):
@@ -51,14 +53,29 @@ def rollout_to_messages(rollout: dict[str, Any]) -> dict[str, Any]:
                          "components": rollout.get("reward_components")}}
 
 
+def rescored(rollout: dict[str, Any]) -> dict[str, Any]:
+    """The rollout with reward and components recomputed by the current verifier (rollouts keep the
+    score of the verifier that ran at collection time)."""
+    from src.evaluation import verifier
+
+    answer, calls = verifier.from_responses_output((rollout.get("response") or {}).get("output", []))
+    res = verifier.score(answer, calls, rollout.get("verifier_metadata") or {})
+    return {**rollout, "reward": res.reward, "reward_components": res.components, "checks": res.checks}
+
+
 def rollouts_to_sft(paths: Iterable[Path | str], min_reward: float = 0.8, out: Path | str | None = None,
-                    dedupe: bool = True) -> list[dict[str, Any]]:
-    """Filter rollouts by reward and convert them; optionally write JSONL to ``out``."""
+                    dedupe: bool = True, rescore: bool = False) -> list[dict[str, Any]]:
+    """Filter rollouts by reward and convert them; optionally write JSONL to ``out``.
+
+    ``rescore`` re-runs the current verifier first, so a verifier fix applies to rollouts already collected.
+    """
     rows, seen = [], set()
     for path in paths:
         with Path(path).open() as fh:
             for line in fh:
                 r = json.loads(line)
+                if rescore:
+                    r = rescored(r)
                 if (r.get("reward") or 0.0) < min_reward:
                     continue
                 ex = rollout_to_messages(r)

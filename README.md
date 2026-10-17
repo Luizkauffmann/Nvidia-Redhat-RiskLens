@@ -46,7 +46,9 @@ r.provenance()          # call_id, tool_name, parameters, timestamp, result_sha2
 
 ```bash
 python -m demo_app.server                    # http://127.0.0.1:8050 (mock planner: no model needed)
-# Local model: pick "Local Ollama" in the panel (Ollama on :11434), or a vLLM endpoint URL
+# Local model: pick "Local Ollama" in the panel (Ollama on :11434), or a vLLM endpoint URL.
+# Ollama's default 4k context silently truncates the agents' prompts (~11.8k tokens for the single agent), so use:
+#   ollama create nemotron-3-nano-4b-32k -f deploy/ollama/Modelfile.nemotron-nano-32k
 ```
 
 | Endpoint | What it does |
