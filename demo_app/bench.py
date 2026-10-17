@@ -41,9 +41,9 @@ COLUMNS = [("label", "Label"), ("model", "Model"), ("runs", "Runs"), ("median_du
            ("grounded_pct", "No unsupported numbers %"), ("mean_reward", "Mean quality (0-1)")]
 
 
-def export(folder: Path) -> None:
-    """Write runs.jsonl (every logged run) and SUMMARY.md (per-model table + per-question detail)."""
-    runs = load_runs()
+def export(folder: Path, only: list[str] | None = None) -> None:
+    """Write runs.jsonl (logged runs, optionally only some labels) and SUMMARY.md (per-model table + per-question detail)."""
+    runs = [r for r in load_runs() if not only or r["label"] in only]
     folder.mkdir(parents=True, exist_ok=True)
     with open(folder / "runs.jsonl", "w") as fh:
         fh.writelines(json.dumps(r, default=str) + "\n" for r in runs)
@@ -77,9 +77,10 @@ def main() -> None:
                     help="core = 5 allowance questions (baseline); kb = regulatory + factor questions (needs scripts.load_kb)")
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--export", type=Path, help="write runs.jsonl + SUMMARY.md to this folder")
+    ap.add_argument("--only", action="append", help="with --export: only runs with this label (repeatable)")
     a = ap.parse_args()
     if a.export:
-        export(a.export)
+        export(a.export, a.only)
         return
     if a.summary:
         print_summary()
