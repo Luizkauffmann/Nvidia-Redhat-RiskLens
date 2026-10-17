@@ -47,10 +47,26 @@ def secret(name: str, default: str | None = None) -> str | None:
     if in_colab():
         from google.colab import userdata  # type: ignore
         try:
-            return userdata.get(name)
-        except Exception:
+            return userdata.get(name) or default
+        except Exception:            # secret missing or notebook access not granted
             return default
     return default
+
+
+SECRET_NAMES = ("NVIDIA_API_KEY", "RISKLENS_VLLM_URL", "RISKLENS_VLLM_MODEL", "VLLM_API_KEY",
+                "RISKLENS_AGENT_BACKEND", "RISKLENS_GYM_POLICY")
+
+
+def load_secrets() -> list[str]:
+    """Copy known settings from .env (local) or Colab Secrets into os.environ; return the names found."""
+    load_dotenv()
+    found = []
+    for name in SECRET_NAMES:
+        value = secret(name)
+        if value:
+            os.environ[name] = value
+            found.append(name)
+    return found
 
 
 def ensure_demo_data(force: bool = False) -> dict:
@@ -62,6 +78,53 @@ def ensure_demo_data(force: bool = False) -> dict:
         generate()
         return {"status": "generated", "data_dir": str(data)}
     return {"status": "present", "data_dir": str(data)}
+
+
+GYM_MIN_PYTHON = (3, 13, 14)
+
+
+def ensure_gym_cli(verbose: bool = True) -> str | None:
+    """Make the NeMo Gym ``gym`` CLI available; return its path (None if it could not be installed).
+
+    * already on PATH            -> use it
+    * this Python >= 3.13.14     -> ``pip install nemo-gym`` into this environment
+    * older Python (e.g. Colab)  -> ``uv`` builds a Python 3.13 venv at ``.venv-gym/`` just for the CLI and
+                                    puts it on PATH; the notebook kernel keeps its own Python. The Gym
+                                    servers run in their own venvs either way.
+    """
+    import shutil
+    import subprocess
+
+    def log(msg: str) -> None:
+        if verbose:
+            print(msg)
+
+    found = shutil.which("gym")
+    if found:
+        return found
+    venv_bin = ROOT / ".venv-gym" / "bin"
+    if (venv_bin / "gym").exists():
+        os.environ["PATH"] = f"{venv_bin}{os.pathsep}{os.environ.get('PATH', '')}"
+        return str(venv_bin / "gym")
+    try:
+        if sys.version_info[:3] >= GYM_MIN_PYTHON:
+            log("Installing nemo-gym into this environment ...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "-q", "nemo-gym>=0.7.0", "uv"], check=True)
+        else:
+            log(f"Python {sys.version.split()[0]} is older than NeMo Gym needs; building a Python 3.13 venv with uv "
+                "(about a minute) ...")
+            if not shutil.which("uv"):
+                subprocess.run([sys.executable, "-m", "pip", "install", "-q", "uv"], check=True)
+            uv = shutil.which("uv") or str(Path(sys.executable).parent / "uv")
+            venv = ROOT / ".venv-gym"
+            subprocess.run([uv, "venv", "-q", "--seed", "--python", "3.13", str(venv)], check=True)
+            subprocess.run([uv, "pip", "install", "-q", "--python", str(venv / "bin" / "python"), "nemo-gym>=0.7.0", "uv"],
+                           check=True)
+            os.environ["PATH"] = f"{venv_bin}{os.pathsep}{os.environ.get('PATH', '')}"
+    except subprocess.CalledProcessError as exc:
+        log(f"Could not install NeMo Gym ({exc}). The in-process evaluator still works.")
+        return None
+    return shutil.which("gym")
 
 
 def endpoint_up(base_url: str, timeout: float = 3.0) -> bool:

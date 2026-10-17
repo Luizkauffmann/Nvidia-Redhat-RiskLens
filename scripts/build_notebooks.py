@@ -33,14 +33,10 @@ if REPO_DIR is None:
     if not IN_COLAB:
         raise SystemExit("Start Jupyter from the Nvidia-Redhat-RiskLens checkout (or set RISKLENS_REPO).")
     REPO_DIR = Path("/content/Nvidia-Redhat-RiskLens")
-    url = REPO_URL
-    try:                                    # private repo: add a GITHUB_TOKEN Colab secret
-        from google.colab import userdata
-        url = f"https://{{userdata.get('GITHUB_TOKEN').strip()}}@github.com/{REPO}.git"
-    except Exception:
-        pass
-    subprocess.run(["git", "clone", "-q", "--depth", "1", url, str(REPO_DIR)], check=True)
-    subprocess.run(["git", "-C", str(REPO_DIR), "remote", "set-url", "origin", REPO_URL], check=True)
+    if (REPO_DIR / ".git").exists():                 # runtime restarted: refresh the existing clone
+        subprocess.run(["git", "-C", str(REPO_DIR), "pull", "-q", "--ff-only"], check=False)
+    else:
+        subprocess.run(["git", "clone", "-q", "--depth", "1", REPO_URL, str(REPO_DIR)], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO_DIR / "requirements.txt"), "matplotlib"], check=True)
 
 os.chdir(REPO_DIR)
@@ -49,11 +45,16 @@ if str(REPO_DIR) not in sys.path:
 
 from src.utils import config
 config.reload()
-from src.utils.notebook import M, ensure_demo_data, endpoint_up, load_dotenv, secret
-load_dotenv()                                # local secrets live in .env (never committed)
+from src.utils.notebook import M, ensure_demo_data, endpoint_up, load_secrets, secret
+print("secrets:", load_secrets() or "none (.env locally, Colab Secrets in Colab)")
 print("repo   :", REPO_DIR, "| python", sys.version.split()[0], "| colab" if IN_COLAB else "| local")
 print("data   :", ensure_demo_data())
 '''
+
+
+def badge(name: str) -> str:
+    url = f"https://colab.research.google.com/github/{REPO}/blob/main/notebooks/{name}"
+    return f"[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]({url})"
 
 
 def md(s: str):
@@ -79,6 +80,8 @@ WORKFLOW = [
     md("""
 # RiskLens 01 · The CECL month-end run
 
+""" + badge("01_CECL_Workflow.ipynb") + """
+
 This is the **traditional CECL run** a bank's allowance team does every month-end, before any AI is involved. RiskLens's agents never run these steps; they investigate the booked results through deterministic tools (step 5), so every number they quote traces back to this run.
 
 | Step | What happens |
@@ -90,7 +93,7 @@ This is the **traditional CECL run** a bank's allowance team does every month-en
 | 4 | Allowance movement analysis: waterfall, segments, macro variables, top borrowers, reconciliation |
 | 5 | Hand-off: the tool schemas the agents get |
 
-**Runs locally.** Start Jupyter from the repo root (`jupyter lab`) and run top to bottom. Data lives in `data/` (regenerated from a fixed seed, identical on every machine). No GPU and no model are needed here.
+**Local or Colab.** Locally, start Jupyter from the repo root (`jupyter lab`). In Colab, the first cell clones the repo. Then run top to bottom. Data lives in `data/`, regenerated from a fixed seed, so it is identical on every machine. No GPU and no model are needed here.
 """),
     md("## 0 · Setup"),
     code(BOOTSTRAP),
@@ -323,9 +326,11 @@ AGENT = [
     md("""
 # RiskLens 02 · Ask Nemotron why the allowance moved
 
+""" + badge("02_Agent_Investigator.ipynb") + """
+
 An **agent on top of the booked CECL runs**. Nemotron 3.5 Lightning (30B total / 3B active, within the 33B limit) plans the investigation and calls RiskLens's deterministic tools. A grounding check verifies that every number in its answer came from a tool result, and each answer is scored with the **same verifier the NeMo Gym environment uses**.
 
-**Runs locally.** Pick the model in the backend cell:
+**Local or Colab.** Secrets come from `.env` locally or from Colab Secrets (key icon) in Colab: `NVIDIA_API_KEY`, `RISKLENS_VLLM_URL`. Colab's GPUs are too small for Nemotron, so in Colab use `nvidia` or point `vllm` at your Brev box. Pick the model in the backend cell:
 
 | Backend | What you need |
 |---|---|
@@ -427,6 +432,8 @@ GYM = [
     md("""
 # RiskLens 03 · NeMo Gym: a verifiable environment for CECL investigations
 
+""" + badge("03_NeMo_Gym_Environment.ipynb") + """
+
 [NeMo Gym](https://github.com/NVIDIA-NeMo/Gym) runs agents against **environments** and scores them with a **verifier**, for evaluation and for RL training. RiskLens is a natural fit: we own the simulator, so we know the right answer to every question.
 
 | NeMo Gym concept | RiskLens |
@@ -439,7 +446,7 @@ GYM = [
 **Reward** (`config/gym.yaml`, each component in [0, 1]):
 `0.55·correctness + 0.20·grounding + 0.10·tool_selection + 0.10·call_validity + 0.05·efficiency`, × 0.25 if the answer used no successful tool call (every episode replays the same story, so memorised answers must not pay), 0 with no answer.
 
-**Runs locally.** Needs Python ≥ 3.13.14 and `pip install -r requirements-gym.txt` (adds `nemo-gym` and `uv`). The first server start builds one venv per Gym server (a few minutes); later starts take seconds.
+**Local or Colab.** NeMo Gym needs Python ≥ 3.13.14. The setup cell installs it: into this environment if the Python is new enough, otherwise (e.g. Colab) into a separate Python 3.13 venv that only the `gym` command uses. The first server start builds one venv per Gym server (a few minutes); later starts take seconds. In Colab, use the `nvidia` policy or your Brev vLLM URL for section 5.
 """),
     md("## 0 · Setup"),
     code(BOOTSTRAP),
@@ -455,8 +462,10 @@ from src.evaluation.trajectories import rollouts_to_sft
 from src.llm.provider import get_provider
 
 pd.set_option("display.max_colwidth", 90)
-print("gym CLI:", shutil.which("gym") or "NOT FOUND -> pip install -r requirements-gym.txt (Python >= 3.13.14)")
-if shutil.which("gym"):
+from src.utils.notebook import ensure_gym_cli
+GYM = ensure_gym_cli()          # installs NeMo Gym if missing (a Python 3.13 venv when the kernel is older, e.g. Colab)
+print("gym CLI:", GYM or "unavailable: sections 1-3 still run in-process")
+if GYM:
     print(subprocess.run(["gym", "--version"], capture_output=True, text=True).stdout.splitlines()[0])
 '''),
     md("""

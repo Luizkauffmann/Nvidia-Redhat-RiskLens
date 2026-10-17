@@ -235,3 +235,4 @@ data/ground_truth/*
 /outputs/
 /results/
 env.yaml
+.venv-gym/
