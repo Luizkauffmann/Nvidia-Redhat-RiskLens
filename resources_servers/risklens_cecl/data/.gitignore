@@ -1,3 +1,4 @@
 train.jsonl
 validation.jsonl
 *_rollouts*.jsonl
+hint.jsonl

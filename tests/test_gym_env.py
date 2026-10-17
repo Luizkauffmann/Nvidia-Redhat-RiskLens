@@ -232,3 +232,21 @@ def test_rollouts_to_sft_can_rescore(tmp_path):
     assert rollouts_to_sft([src], min_reward=0.8) == []    # stored score
     out = rollouts_to_sft([src], min_reward=0.8, rescore=True)
     assert len(out) == 1 and out[0]["metadata"]["reward"] >= 0.8
+
+
+def test_hint_rows_and_their_export_without_the_hint():
+    from src.evaluation.hint_distill import HINTS, build_hint_rows
+    from src.evaluation.trajectories import rollout_to_messages
+
+    rows = build_hint_rows(build_rows()["train"])
+    assert {r["verifier_metadata"]["task_id"] for r in rows} == set(HINTS)       # canonical rows only
+    assert len(rows) == 3                                                       # question + 2 paraphrases
+    r = rows[0]
+    system = r["responses_create_params"]["input"][0]["content"]
+    assert system.endswith(HINTS["q14_cre"]) and r["id"].endswith("__hint")
+    assert r["verifier_metadata"]["distill_system"] == system[: -len(HINTS["q14_cre"])].rstrip()
+    rollout = {**r, "response": {"output": [
+        {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "CRE rose."}]}]}}
+    exported = rollout_to_messages(rollout)
+    assert exported["messages"][0]["content"] == r["verifier_metadata"]["distill_system"]
+    assert HINTS["q14_cre"] not in exported["messages"][0]["content"]

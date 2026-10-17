@@ -23,7 +23,9 @@ def _text(content: Any) -> str:
 
 def rollout_to_messages(rollout: dict[str, Any]) -> dict[str, Any]:
     params = rollout["responses_create_params"]
-    messages: list[dict[str, Any]] = [{"role": m["role"], "content": _text(m.get("content"))}
+    distill = (rollout.get("verifier_metadata") or {}).get("distill_system")   # hint distillation: drop the hint
+    messages: list[dict[str, Any]] = [{"role": m["role"], "content": distill if distill and m["role"] == "system"
+                                       else _text(m.get("content"))}
                                       for m in params.get("input", []) if m.get("role") in ("system", "user")]
     pending: list[dict[str, Any]] = []
     for item in (rollout.get("response") or {}).get("output", []):
