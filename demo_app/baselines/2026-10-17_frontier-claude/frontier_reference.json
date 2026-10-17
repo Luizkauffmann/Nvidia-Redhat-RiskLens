@@ -1,0 +1,328 @@
+{
+ "name": "frontier reference: Claude Opus 5.5 (hand-driven, same tools)",
+ "model": "claude-opus-5-5",
+ "date": "2026-10-17",
+ "dataset": {
+  "seed": 20260831,
+  "story": "CECL $99.06M -> $118.30M (+$19.24M)",
+  "previous_date": "2026-07-31",
+  "current_date": "2026-08-31",
+  "framework": "CECL"
+ },
+ "setup": "Same ORCHESTRATOR_PROMPT, same 33 tools via call_tool, ground truth read only after answering, scored by src/evaluation/verifier.py with config/gym.yaml weights. Model time not measurable (hand-driven).",
+ "mean_reward_all": 0.9973,
+ "mean_reward_bench5": 1.0,
+ "bench5_task_ids": [
+  "q02_current_allowance",
+  "q05_drivers",
+  "q07_top_borrowers",
+  "q13_model_change",
+  "q15_reconcile"
+ ],
+ "tasks": {
+  "q01_previous_allowance": {
+   "question": "What was the CECL allowance in July 2026?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 1,
+   "checks_total": 1,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_allowance"
+   ],
+   "grounding": "PASS",
+   "answer": "The CECL allowance at 31 July 2026 was $99.06M (official run CECL_20260731_OFFICIAL).\n\n**Facts**\n- July allowance $99.06M on a $7,606.27M balance, coverage 1.30% [compare_allowance]\n- Largest pieces: CRE $42.31M and C&I $32.32M [compare_allowance]\n\n**Interpretation**\n- Two commercial books hold most of the reserve, so they matter most for any month-on-month movement.\n"
+  },
+  "q02_current_allowance": {
+   "question": "What was the CECL allowance at the end of August 2026?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 1,
+   "checks_total": 1,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_allowance"
+   ],
+   "grounding": "PASS",
+   "answer": "The CECL allowance at 31 August 2026 was $118.30M (official run CECL_20260831_OFFICIAL), up from $99.06M in July.\n\n**Facts**\n- August allowance $118.30M on a $7,628.55M balance; coverage 1.55% vs 1.30% in July [compare_allowance]\n- Change $19.24M (19.4%); CRE alone accounts for $13.89M (72.2% of the change) [compare_allowance]\n\n**Interpretation**\n- Coverage rose far faster than balances, so the increase is mainly a risk story rather than a volume story.\n"
+  },
+  "q03_dollar_change": {
+   "question": "By how many dollars did the allowance change from July to August?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_allowance"
+   ],
+   "grounding": "PASS",
+   "answer": "The allowance increased by $19.24M, from $99.06M on 31 July to $118.30M on 31 August 2026.\n\n**Facts**\n- Change +$19.24M (19.4%) [compare_allowance]\n- By portfolio: CRE +$13.89M, C&I +$1.64M, Mortgage +$1.52M, Credit Card +$1.37M, Auto +$0.57M, Consumer +$0.24M [compare_allowance]\n\n**Interpretation**\n- Every portfolio rose, but CRE dominates the increase.\n"
+  },
+  "q04_pct_change": {
+   "question": "What was the percentage increase in the allowance between July and August?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 1,
+   "checks_total": 1,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_allowance"
+   ],
+   "grounding": "PASS",
+   "answer": "The allowance increased 19.4% between July and August 2026 ($99.06M \u2192 $118.30M).\n\n**Facts**\n- Change +$19.24M, +19.4% [compare_allowance]\n- Fastest-growing books in percentage terms: CRE +32.8%, Auto +21.6%, Credit Card +15.6% [compare_allowance]\n- Coverage rose from 1.30% to 1.55% of balance [compare_allowance]\n\n**Interpretation**\n- A 19.4% reserve increase with balances almost flat points to deteriorating risk parameters, concentrated in CRE.\n"
+  },
+  "q05_drivers": {
+   "question": "Why did our allowance increase in August? What were the major drivers?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 4,
+   "checks_total": 4,
+   "tool_calls": 2,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_portfolio_attribution",
+    "calculate_segment_attribution"
+   ],
+   "grounding": "PASS",
+   "answer": "The allowance rose $19.24M (19.4%), from $99.06M to $118.30M, driven mainly by worse macroeconomic scenarios ($10.34M) and borrower credit deterioration ($7.48M), concentrated in CRE.\n\n**Facts**\n- Macroeconomic scenario changes +$10.34M (53.7% of the change); largest steps: unemployment +$4.25M, CRE price growth +$3.07M, GDP +$2.19M [calculate_portfolio_attribution]\n- Credit deterioration (borrower credit migration) +$7.48M (38.9%) [calculate_portfolio_attribution]\n- Portfolio growth (new originations) +$2.19M (11.4%) [calculate_portfolio_attribution]\n- Model / methodology & judgment +$1.88M (9.8%), entirely from the scenario-weights step; model versions/parameters $0.00M and management overlays $0.00M [calculate_portfolio_attribution]\n- Paydowns / runoff -$2.66M: loans paid off / matured -$3.50M, partly offset by balance & term changes +$0.84M [calculate_portfolio_attribution]\n- CRE accounts for $13.89M of the change (72.2%): macro +$5.69M and credit deterioration +$5.13M [calculate_segment_attribution]\n\n**Interpretation**\n- This is an economic and credit-quality story, not a volume or model story: growth was largely offset by runoff, and no model change contributed.\n- CRE is where the macro deterioration (unemployment and CRE prices) and borrower-level weakening compound.\n- Attribution amounts are sequential-order dependent; macro remains the primary driver under other orderings.\n\n**Next steps**\n- Drill into the largest CRE contributors and the variable-level macro attribution; confirm the scenario-weight change was approved.\n"
+  },
+  "q06_top_portfolio": {
+   "question": "Which portfolio contributed most to the allowance increase?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_segment_attribution"
+   ],
+   "grounding": "PASS",
+   "answer": "Commercial Real Estate (CRE) contributed most: +$13.89M of the $19.24M increase, or 72.2%.\n\n**Facts**\n- CRE +$13.89M (72.2%): macro +$5.69M, credit deterioration +$5.13M, paydowns/runoff +$1.38M, model/methodology +$1.16M, growth +$0.53M [calculate_segment_attribution]\n- Next largest: C&I +$1.64M (8.5%), Mortgage +$1.52M (7.9%), Credit Card +$1.37M (7.1%) [calculate_segment_attribution]\n- C&I would have risen far more without runoff: macro +$2.82M and credit +$1.33M, offset by -$3.48M of paydowns/runoff [calculate_segment_attribution]\n\n**Interpretation**\n- CRE is hit on both fronts at once: weaker macro paths and borrower-level deterioration of similar size.\n- Unusually, CRE's runoff line is positive, i.e. balance/term changes on existing CRE loans added risk rather than removing it; worth checking.\n\n**Next steps**\n- Review the top CRE borrowers by allowance change and the CRE runoff/term detail.\n"
+  },
+  "q07_top_borrowers": {
+   "question": "Which borrowers contributed most to the increase? Who should I investigate first?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 1,
+   "checks_total": 1,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "identify_top_contributors"
+   ],
+   "grounding": "PASS",
+   "answer": "Start with CP_040408 (Silverline Industries Co., CRE office): its allowance rose $1.20M, the largest of any borrower, on a 3-notch downgrade.\n\n**Facts**\n- The top-ranked borrowers account for $5.80M (30.1%) of the $19.24M increase [identify_top_contributors]\n- 1. CP_040408 Silverline Industries Co. (CRE, office, $18.00M): ECL $0.35M \u2192 $1.54M (+$1.20M); 12m PD 1.8% \u2192 8.1%; credit deterioration +$0.99M; downgrade BB+\u2192B+, DSCR 1.33\u21921.16, LTV 0.68\u21920.74, added to watchlist [identify_top_contributors]\n- 2. CP_040469 Pinecrest Ventures Inc. (CRE, retail, $10.45M): +$1.04M; PD 2.0% \u2192 11.4%; both loans now 30-59 days past due, DSCR 1.27\u21921.17 [identify_top_contributors]\n- 3. CP_038825 Summit Enterprises Co. (C&I): +$0.93M; PD 4.9% \u2192 79.7%; delinquency 60-89 \u2192 90+, defaulted [identify_top_contributors]\n- 4. CP_040409 Summit Group LP (CRE, office): +$0.55M; downgrade BB+\u2192BB, DSCR 1.27\u21921.16, added to watchlist [identify_top_contributors]\n- 5. CP_040679 Pinecrest Logistics LP (CRE, multifamily, $21.16M): +$0.49M, driven by a renewal extending the term from 1 to 24 months, not by credit deterioration [identify_top_contributors]\n- 6\u20137. CP_040793 Cedar Development LP (+$0.39M, BB\u2192B+) and CP_040852 Highpoint Group Inc. (+$0.35M, BB+\u2192BB, watchlist), both CRE [identify_top_contributors]\n\n**Interpretation**\n- Priority 1: CP_040408 and CP_040469 \u2014 large CRE exposures with sharp PD jumps, falling DSCR and rising LTV; CP_040469 is also now delinquent.\n- Priority 2: CP_038825 has defaulted; confirm workout status and that the individually assessed loss is appropriate.\n- CP_040679 is a different issue: its increase comes from a term extension, so review the renewal terms rather than credit quality.\n- The pattern across the CRE names (office and retail, downgrades plus watchlist additions) suggests a sector theme, not isolated cases.\n\n**Next steps**\n- Run compare_borrower_periods on CP_040408 and CP_040469 to see the scorecard drivers; credit decisions stay with the credit officers.\n"
+  },
+  "q08_pd": {
+   "question": "Did probability of default increase between July and August?",
+   "reward": 0.992,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 0.96,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 3,
+   "checks_total": 3,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_pd_migration"
+   ],
+   "grounding": "FAIL",
+   "answer": "Yes. PD increased in every portfolio: the EAD-weighted 12-month PD on continuing loans rose from 1.23% to 1.61% (+37.4 bps), mostly because of the macro forecast.\n\n**Facts**\n- Continuing loans (48,300): 12m PD 1.23% \u2192 1.61% (+37.4 bps); base scorecard PD (credit quality only, no macro) 0.81% \u2192 0.85% (+4.1 bps) [calculate_pd_migration]\n- 1,276 loans saw their PD double, 1,384 rose by 50% or more, and 3,407 improved [calculate_pd_migration]\n- By portfolio (12m PD change): Credit Card +123.0 bps, Consumer +76.9 bps, Auto +54.8 bps, CRE +52.8 bps, Mortgage +27.4 bps, C&I +26.1 bps [calculate_pd_migration]\n- CRE is the only book where base PD moved materially (+10.7 bps, 0.84% \u2192 0.94%), and 159 of its 1,280 loans saw PD double [calculate_pd_migration]\n\n**Interpretation**\n- Most of the PD increase is macro-driven: 12m PD moved far more than the scorecard PD in every portfolio.\n- CRE combines both effects: macro deterioration plus genuine borrower-level weakening, which is why it dominates the dollar increase despite a smaller bps move than cards.\n- Cards move most in bps but carry little exposure, so the dollar impact there is modest.\n\n**Next steps**\n- Check rating migration and DSCR/LTV changes for the CRE loans whose PD doubled.\n"
+  },
+  "q09_lgd": {
+   "question": "Did LGD increase, and did it drive the change?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 1,
+   "checks_total": 1,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_lgd_migration"
+   ],
+   "grounding": "PASS",
+   "answer": "LGD rose only slightly (33.2% \u2192 33.9%, +0.74 pp on continuing loans), so it was a secondary contributor; the change was driven mainly by PD, not LGD.\n\n**Facts**\n- Continuing-loan LGD 33.2% \u2192 33.9% (+0.74 pp) [calculate_lgd_migration]\n- CRE had the largest LGD increase: 32.9% \u2192 34.4% (+1.51 pp), with CRE LTV up only +0.27 pp (60.7% \u2192 61.0%) [calculate_lgd_migration]\n- Other books moved less: Mortgage +0.54 pp, Consumer +0.32 pp, C&I +0.24 pp, Auto +0.16 pp, Credit Card unchanged at 85.0% [calculate_lgd_migration]\n- LGD model IDs are the same on both dates (e.g. CRE_LGD_v3) [calculate_lgd_migration]\n\n**Interpretation**\n- With LTV nearly flat, most of the CRE LGD increase is likely coming from the weaker CRE price path (macro) rather than collateral re-appraisals.\n- An LGD move of under one point is small relative to the PD increase seen in the same period, so LGD amplifies the CRE story rather than explaining it.\n- This tool does not give a separate dollar figure for LGD; its effect sits inside the macro and credit-deterioration attribution steps.\n\n**Next steps**\n- If a dollar split of PD vs LGD is needed, run the CRE price-growth macro attribution and the borrower-level comparison for the largest CRE names.\n"
+  },
+  "q10_exposure": {
+   "question": "Did exposure grow? How much new business did we originate?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 2,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_balance_change",
+    "calculate_new_originations"
+   ],
+   "grounding": "PASS",
+   "answer": "Exposure barely grew: total balance rose $22.28M (0.29%) to $7,628.55M, because $139.41M of new originations was almost offset by maturities, payoffs, charge-offs and paydowns.\n\n**Facts**\n- Balance bridge: $7,606.27M \u2212 exits (matured $41.78M, paid off $27.00M, charged off $5.82M) \u2212 paydowns on continuing loans $82.71M + increases $40.17M + new originations $139.41M = $7,628.55M [calculate_balance_change]\n- New business: 1,592 loans, $139.41M balance, allowance impact +$2.19M [calculate_new_originations]\n- By portfolio: C&I $45.32M (100 loans), CRE $40.00M (12 loans, mostly industrial), Mortgage $34.68M, Auto $14.82M, Consumer $2.45M, Credit Card $2.13M [calculate_new_originations]\n- CRE balance was flat (\u2212$0.86M): the $40.00M of new loans replaced $35.52M of maturities and $5.33M of payoffs [calculate_balance_change]\n\n**Interpretation**\n- Growth is not why the allowance rose: book size is essentially unchanged, and new business added only a small part of the increase.\n- The new CRE loans carry low PDs (around 1.0%), so the CRE problem sits in the existing book, not in new lending.\n\n**Next steps**\n- Monitor whether CRE refinancing activity (maturities rolling into new or extended loans) continues to bring term risk.\n"
+  },
+  "q11_macro_variable": {
+   "question": "Which macroeconomic variable had the largest impact on the allowance?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "calculate_variable_attribution"
+   ],
+   "grounding": "PASS",
+   "answer": "Unemployment had the largest impact: +$4.41M of the $10.34M macro effect (42.7%), and it is the top variable under both Shapley and sequential attribution.\n\n**Facts**\n- Shapley split of the $10.34M macro effect: unemployment +$4.41M (42.7%), CRE price growth +$2.94M (28.5%), GDP growth +$2.17M (21.0%), interest rate +$0.60M (5.8%), HPI growth +$0.18M (1.8%), inflation +$0.03M [calculate_variable_attribution]\n- The sequential walk gives the same ranking: unemployment +$4.25M, CRE price growth +$3.07M [calculate_variable_attribution]\n- Unemployment is the top variable in every portfolio except CRE, where CRE price growth leads (+$2.94M vs unemployment +$1.70M) [calculate_variable_attribution]\n\n**Interpretation**\n- Unemployment is a broad-based driver across commercial and consumer books; CRE prices are a concentrated driver that hits only CRE, but hard.\n- Together these two variables explain most of the macro effect, so the forecast assumptions for unemployment and CRE prices deserve the most scrutiny in the scenario review.\n\n**Next steps**\n- Compare the July and August forecast vintages for those two variables and check the CRE sensitivity to further CRE price shocks.\n"
+  },
+  "q12_weights": {
+   "question": "Did the scenario weights change between July and August?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_scenario_weights"
+   ],
+   "grounding": "PASS",
+   "answer": "Yes. The weights shifted 2.0 pp from baseline to severe adverse (baseline 60% \u2192 58%, adverse unchanged at 30%, severe adverse 10% \u2192 12%), adding $1.88M to the allowance.\n\n**Facts**\n- Baseline 60% \u2192 58% (\u22122.0 pp); adverse 30% \u2192 30%; severe adverse 10% \u2192 12% (+2.0 pp) [compare_scenario_weights]\n- Allowance impact of the weight change: +$1.88M (measured after the macro paths moved to the August vintage) [compare_scenario_weights]\n- Unweighted severe adverse ECL is $189.12M in August vs $94.92M under baseline, which is why a small shift toward severe adds materially [compare_scenario_weights]\n- Both sets of weights were approved by the ALLL Committee (synthetic), on 2026-07-28 and 2026-08-28 [compare_scenario_weights]\n\n**Interpretation**\n- This is a judgmental methodology choice, not a model change, and it is the whole of the \"model / methodology & judgment\" bucket.\n- It reinforces the macro story: management both worsened the forecasts and put more weight on the severe scenario.\n\n**Next steps**\n- Make sure the committee rationale for the shift is documented alongside the August forecast vintage.\n"
+  },
+  "q13_model_change": {
+   "question": "Could this increase just be because we changed models?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "compare_model_versions"
+   ],
+   "grounding": "PASS",
+   "answer": "No. No PD, LGD or EAD model version changed between July and August, and the allowance impact of model changes is $0.00M.\n\n**Facts**\n- Every product used the same models on both dates (no version changes); e.g. CRE used CRE_PD_v4 and CRE_LGD_v3 in July and in August [compare_model_versions]\n- Allowance impact of model change: $0.00M [compare_model_versions]\n- A candidate CRE_PD_v5 exists but is IN_VALIDATION and not approved for production; it was not used in either run [compare_model_versions]\n\n**Interpretation**\n- The increase is not a model-version effect; it comes from the inputs (macro forecasts, borrower credit quality, book changes) and from the scenario-weight judgment, which is a methodology choice rather than a model change.\n- The pending CRE_PD_v5 is worth flagging: if it is approved later, its effect should be shown as a separate step so it is not confused with the current CRE deterioration.\n\n**Next steps**\n- Confirm with Model Risk the expected timing and impact of the CRE_PD_v5 validation.\n"
+  },
+  "q14_cre": {
+   "question": "What happened specifically in Commercial Real Estate?",
+   "reward": 0.967,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 0.667,
+    "efficiency": 1.0
+   },
+   "checks_passed": 3,
+   "checks_total": 3,
+   "tool_calls": 3,
+   "tool_errors": 1,
+   "tools_used": [
+    "identify_top_contributors",
+    "identify_top_contributors",
+    "calculate_segment_attribution"
+   ],
+   "grounding": "PASS",
+   "answer": "CRE drove most of the increase: its allowance rose $13.89M (72.2% of the total change), from both a worse macro outlook and a cluster of office and retail borrowers that were downgraded, with falling DSCR and rising LTV.\n\n**Facts**\n- CRE change +$13.89M (72.2% of the $19.24M total): macro +$5.69M, credit deterioration +$5.13M, paydowns/runoff +$1.38M, model/methodology (scenario weights) +$1.16M, growth +$0.53M [calculate_segment_attribution]\n- The top 20 CRE borrowers account for $6.91M (49.7%) of the CRE increase; 19 of the 20 are credit-deterioration cases in office or retail property [identify_top_contributors]\n- Typical pattern: 12m PD from about 1.8\u20132.5% to 4\u20136% (e.g. CP_040408 Silverline Industries Co.: 1.8% \u2192 8.1%, BB+\u2192B+, DSCR 1.33\u21921.16, LTV 0.68\u21920.74, watchlist; CP_040469 Pinecrest Ventures Inc.: 2.0% \u2192 11.4%, now 30-59 days past due) [identify_top_contributors]\n- Other downgraded names include CP_040409 Summit Group LP, CP_040793 Cedar Development LP, CP_040852 Highpoint Group Inc., CP_040607 Maple Realty LP and CP_040262 Ironwood Capital LP [identify_top_contributors]\n- The exception is CP_040679 Pinecrest Logistics LP (multifamily, +$0.49M): a renewal extended its term from 1 to 24 months, with no credit deterioration [identify_top_contributors]\n\n**Interpretation**\n- CRE is a concentrated double hit: the CRE price and unemployment paths raise PDs and LGDs across the book, while a specific group of office and retail borrowers deteriorated on their own fundamentals.\n- The positive runoff line in CRE is largely term extensions on renewals, which lengthen lifetime exposure; that is a refinancing-risk signal rather than credit migration.\n\n**Next steps**\n- Review the downgraded office and retail names first (Silverline, Pinecrest Ventures, Summit Group), then the renewal/extension practice in CRE; credit decisions remain with the credit team.\n"
+  },
+  "q15_reconcile": {
+   "question": "Does the attribution reconcile to the total allowance change?",
+   "reward": 1.0,
+   "components": {
+    "correctness": 1.0,
+    "grounding": 1.0,
+    "tool_selection": 1.0,
+    "call_validity": 1.0,
+    "efficiency": 1.0
+   },
+   "checks_passed": 2,
+   "checks_total": 2,
+   "tool_calls": 1,
+   "tool_errors": 0,
+   "tools_used": [
+    "reconcile_allowance_change"
+   ],
+   "grounding": "PASS",
+   "answer": "Yes. The attribution reconciles exactly: the $19.24M reported change is 100.0% explained with a $0.00M residual, status PASS.\n\n**Facts**\n- Reported allowance moved from $99.06M (2026-07-31) to $118.30M (2026-08-31), a change of $19.24M; explained change $19.24M, residual $0.00M, 100.0% explained \u2192 PASS (PASS threshold: residual \u2264 0.1% of the change) [reconcile_allowance_change]\n- All seven controls PASS: the engine reproduces both official allowances, loan contributions sum to the explained change, every loan's step impacts sum to its own ECL change, and each portfolio's attribution ties to its reported change (e.g. CRE $13.89M attributed = $13.89M reported) [reconcile_allowance_change]\n- Drivers in the waterfall: macroeconomic $10.34M (53.7%), credit deterioration $7.48M (38.9%), paydowns/runoff -$2.66M, portfolio growth $2.19M, model/methodology & judgment $1.88M [reconcile_allowance_change]\n- The primary driver is macroeconomic under sequential, reverse-sequential and Shapley ordering; the macro impact ranges from $9.49M (reverse) to $10.34M (sequential), Shapley $9.93M [reconcile_allowance_change]\n\n**Interpretation**\n- The tie-out is real, not plugged: the residual is measured from counterfactual engine re-runs rather than forced to zero.\n- The driver amounts are order-dependent (interaction effects land on the later step), so the individual dollar figures should be presented with that caveat; the ranking of the top two drivers and the conclusion that macro is the primary cause do not depend on the method.\n- Lower-ranked drivers swap places across methods (runoff vs growth), so avoid over-reading their order.\n\n**Next steps**\n- Present the Shapley figures alongside the sequential waterfall in the attribution pack, and review the CRE book, which carries most of the change.\n"
+  }
+ }
+}
