@@ -114,3 +114,35 @@ def test_static_export_replays_the_server(tmp_path):
         assert set(answers[mode]) == set(m["demo_questions"])
         assert all(a["tool_calls"] for a in answers[mode].values())
     assert answers["team"][m["demo_questions"][0]]["grounding"]["status"] == "PASS"
+    runs = json.loads((data / "runs.json").read_text())             # committed baselines for the Model runs tab
+    assert set(runs) == {"summary", "runs"}
+
+
+def test_runs_are_logged_with_timing_and_quality(ground_truth, monkeypatch):
+    from demo_app import runlog
+    from src.evaluation.tasks import build_tasks
+
+    # Score against the test fixture's ground truth (CI has no data/ground_truth checked in).
+    monkeypatch.setattr(runlog, "_TASKS", {runlog._norm(t.question): t for t in build_tasks(ground_truth)})
+    client = TestClient(app)
+    questions = client.get("/api/context").json()["demo_questions"]
+    assert len(questions) == len(runlog.BENCH_TASKS)        # every demo chip is a scorable bank question
+    before = len(runlog.load_runs())
+    a = client.post("/api/ask", json={"question": questions[0], "provider": "mock", "label": "mock test"}).json()
+    assert a["quality"] and 0.0 <= a["quality"]["reward"] <= 1.0
+    assert set(a["timing"]) == {"llm_s", "tool_s", "llm_turns", "tokens_per_s"}
+    client.post("/api/ask", json={"question": "Free-form question outside the bank?", "provider": "mock"})
+    data = client.get("/api/runs").json()
+    assert len(data["runs"]) == before + 2
+    newest, scored = data["runs"][0], data["runs"][1]
+    assert newest["quality"] is None and scored["label"] == "mock test" and scored["model"] == "mock-planner"
+    row = next(r for r in data["summary"] if r["label"] == "mock test")
+    assert row["runs"] >= 1 and row["mean_reward"] is not None
+
+
+def test_demo_questions_are_evaluation_bank_questions(ground_truth):
+    from demo_app import runlog
+    from src.evaluation.tasks import build_tasks
+
+    bank = {t.task_id: t.question for t in build_tasks(ground_truth)}
+    assert [bank[i] for i in runlog.BENCH_TASKS] == runlog.BENCH_QUESTIONS

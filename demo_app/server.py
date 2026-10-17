@@ -23,21 +23,14 @@ from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
+from demo_app import runlog  # noqa: E402
 from demo_app.pack import build_pack  # noqa: E402
-from src.agents.orchestrator import build_orchestrator  # noqa: E402
-from src.agents.team import build_team  # noqa: E402
 from src.llm.provider import get_provider  # noqa: E402
-from src.tools import ToolCallLog, call_tool  # noqa: E402
+from src.tools import call_tool  # noqa: E402
 from src.tools.base import ToolError  # noqa: E402
-from src.utils import config  # noqa: E402
 
 STATIC = Path(__file__).parent / "static"
-DEMO_QUESTIONS = [
-    "Why did the allowance increase in August?",
-    "Which borrowers should I investigate?",
-    "Does the attribution reconcile?",
-    "Did any model or scenario weight change?",
-]
+DEMO_QUESTIONS = runlog.BENCH_QUESTIONS   # evaluation-bank questions, so every run from a chip gets a reward
 _agent_lock = threading.Lock()  # one agent run at a time: small local models, shared tool cache
 
 app = FastAPI(title="RiskLens offline demo")
@@ -55,6 +48,8 @@ class AskRequest(BaseModel):
     model: str | None = None
     base_url: str | None = None
     no_thinking: bool = True
+    label: str | None = None           # name for this model in the run comparison (default: model id)
+    log_run: bool = True               # False for recorded snapshots (scripts/export_static_demo.py)
 
 
 @lru_cache(maxsize=8)
@@ -91,19 +86,23 @@ def tool(req: ToolRequest) -> dict[str, Any]:
 
 @app.post("/api/ask")
 def ask(req: AskRequest) -> dict[str, Any]:
-    overrides = {"provider": req.provider, "model": req.model, "base_url": req.base_url}
-    if req.no_thinking:
-        overrides["enable_thinking"] = False
-    provider = get_provider({k: v for k, v in overrides.items() if v is not None})
-    log = ToolCallLog(config.path("outputs") / "demo_app_tool_calls.jsonl")
-    build = build_team if req.mode == "team" else build_orchestrator
+    overrides = {"provider": req.provider, "model": req.model, "base_url": req.base_url,
+                 "enable_thinking": False if req.no_thinking else None}
     with _agent_lock:
-        run = build(provider, log=log).run(req.question)
+        run, record = runlog.ask(req.question, req.mode, overrides, req.label, source="app", record=req.log_run)
     d = run.to_dict()
     team = next((e for e in run.events if e["type"] == "team"), None)
-    return {"answer": run.answer, "status": run.status, "grounding": run.grounding, "provider": provider.describe(),
+    return {"answer": run.answer, "status": run.status, "grounding": run.grounding, "provider": run.provider,
             "duration_s": run.duration_s, "metrics": d["metrics"], "tool_calls": d["tool_calls"],
-            "specialists": team["specialists"] if team else []}
+            "specialists": team["specialists"] if team else [], "quality": record["quality"],
+            "timing": {k: record[k] for k in ("llm_s", "tool_s", "llm_turns", "tokens_per_s")}}
+
+
+@app.get("/api/runs")
+def runs() -> dict[str, Any]:
+    """Every logged run (newest first) and a per-model summary of speed and quality."""
+    rs = runlog.load_runs()
+    return {"summary": runlog.summary(rs), "runs": rs[::-1]}
 
 
 @app.get("/api/export.xlsx")

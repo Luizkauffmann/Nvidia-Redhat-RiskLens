@@ -55,6 +55,9 @@ python -m demo_app.server                    # http://127.0.0.1:8050 (mock plann
 | `POST /api/ask` | `{question, mode: team\|orchestrator, provider, base_url, model}`: answer + grounding + tool calls |
 | `POST /api/tool` | call any registered tool directly (for wiring new agents) |
 | `GET /api/export.xlsx` | the original Excel pack, for anyone with a spreadsheet app |
+| `GET /api/runs` | every logged Ask with model, timing (model vs tools), tokens and verifier reward; shown in the **Model runs** tab |
+
+**Comparing models:** `python -m demo_app.bench --label "<name>" --provider vllm --base-url <url> --model <id>` runs five evaluation-bank questions and logs speed and quality; `--summary` compares, `--export` saves a baseline. Committed baselines: [`demo_app/baselines/`](demo_app/baselines) (stock Nemotron 3 Nano 4B on an M4 16 GB: median 116 s/question, quality 0.39).
 
 **Static snapshot on GitHub Pages:** every push to `main` runs `.github/workflows/pages.yml`, which generates the seeded data and runs `python -m scripts.export_static_demo` to publish **https://luizkauffmann.github.io/nvidia-redhat-risklens/**. The packs (CECL and IFRS 9), Excel downloads and recorded agent runs for the suggested questions are precomputed by the same tools, so the numbers and call IDs are real. The Ask panel only replays those questions; to ask your own, run the server locally or in a Codespace (`python -m demo_app.server --host 0.0.0.0`, then open the forwarded port 8050).
 

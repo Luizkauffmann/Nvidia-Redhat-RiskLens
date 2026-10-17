@@ -49,12 +49,14 @@
       <label>Model
         <select id="backend">
           <option value="mock">Mock planner (no model)</option>
-          <option value="ollama">Local Ollama · nemotron-3-nano:4b</option>
+          <option value="ollama">Local Ollama</option>
           <option value="vllm">vLLM endpoint</option>
         </select>
       </label>
     </div>
     <label id="urlrow" hidden>Endpoint URL <input id="baseurl" value="http://localhost:8000/v1"></label>
+    <label id="ollamarow" hidden>Ollama model <input id="ollamamodel" value="nemotron-3-nano:4b"></label>
+    <label>Label for comparison (optional) <input id="label" placeholder="e.g. stock 4B"></label>
     <div class="chips" id="chips"></div>
     <textarea id="question" rows="3" placeholder="Why did the allowance increase in August?"></textarea>
     <button id="askbtn" type="button">Ask</button>
