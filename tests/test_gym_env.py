@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 
 import pytest
 
@@ -10,9 +11,29 @@ from src.evaluation import verifier
 from src.evaluation.gym_dataset import build_rows, responses_tools
 from src.evaluation.tasks import build_tasks, load_ground_truth
 from src.evaluation.verifier import ToolCallTrace, score
-from src.tools import call_tool
+from src.tools import ToolContext, call_tool, set_context
+from src.utils import config
+from tests.conftest import CURR, PREV
 
 PAIR = {"previous_date": "2026-07-31", "current_date": "2026-08-31"}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def ctx(generated, attribution, tmp_path_factory):
+    """Tools read the session's generated data; the task bank reads its ground truth."""
+    c = ToolContext(data_dir=generated[0], cache_dir=tmp_path_factory.mktemp("cache"), disk_cache=False)
+    c._mem[f"attr_default_CECL_{PREV}_{CURR}"] = attribution
+    set_context(c)
+    old = os.environ.get("RISKLENS_GROUND_TRUTH_DIR")
+    os.environ["RISKLENS_GROUND_TRUTH_DIR"] = str(generated[1])
+    config.reload()
+    yield c
+    set_context(None)
+    if old is None:
+        os.environ.pop("RISKLENS_GROUND_TRUTH_DIR", None)
+    else:
+        os.environ["RISKLENS_GROUND_TRUTH_DIR"] = old
+    config.reload()
 
 
 @pytest.fixture(scope="module")
@@ -166,3 +187,22 @@ def test_resources_server_endpoints():
     body = out.json()
     assert body["reward"] == pytest.approx(1.0)
     assert set(body["reward_components"]) == {"correctness", "grounding", "tool_selection", "call_validity", "efficiency"}
+
+
+def test_rollouts_to_sft(tmp_path):
+    from src.evaluation.trajectories import rollouts_to_sft
+
+    row = build_rows()["example"][0]
+    good = {**row, "reward": 0.95, "response": {"output": [
+        {"type": "function_call", "call_id": "c1", "name": "get_allowance_summary", "arguments": "{}"},
+        {"type": "function_call_output", "call_id": "c1", "output": "{\"status\": \"ok\"}"},
+        {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "July was $99.06M."}]}]}}
+    bad = {**good, "reward": 0.2}
+    src = tmp_path / "r.jsonl"
+    src.write_text("\n".join(json.dumps(r) for r in (good, bad, good)) + "\n")
+    out = rollouts_to_sft([src], min_reward=0.8, out=tmp_path / "sft.jsonl")
+    assert len(out) == 1                                   # low reward dropped, duplicate removed
+    roles = [m["role"] for m in out[0]["messages"]]
+    assert roles == ["system", "user", "assistant", "tool", "assistant"]
+    assert out[0]["messages"][2]["tool_calls"][0]["function"]["name"] == "get_allowance_summary"
+    assert out[0]["tools"][0]["type"] == "function"

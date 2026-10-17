@@ -10,8 +10,8 @@
 
 This is the part that, in a bank, lives in a platform such as Dataiku or a
 vendor engine. RiskLens agents never run it; they investigate its outputs
-through src/tools. The Colab notebook drives these steps against a Google
-Drive folder (see notebooks/RiskLens_CECL_Workflow.ipynb).
+through src/tools. notebooks/01_CECL_Workflow.ipynb drives these steps from a
+local checkout (or any folder set with the RISKLENS_*_DIR variables).
 """
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 """Configuration loading. All tunable settings live in config/*.yaml.
 
 Locations can be redirected with environment variables, so the same code runs
-from the repo, on Brev, or in Colab against a Google Drive folder:
+from the repo (default), on Brev, or in Colab against a mounted folder:
 
     RISKLENS_CONFIG_DIR        config/*.yaml (methodology, models, settings, ...)
     RISKLENS_DATA_DIR          source data + official runs   (settings.paths.generated)
