@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -108,6 +109,7 @@ def main() -> None:
     if args.check_data:
         return
 
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")   # long rows fragment memory
     import torch
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
@@ -137,17 +139,16 @@ def main() -> None:
                                                 for b in batch])}
 
     class TailLossTrainer(Trainer):
-        """Logits only from the first supervised token on: rows are ~13k tokens (tool schemas) but only
-        the tail is trained, and full-length logits (13k x 131k vocab) would cost >10 GB."""
+        """Logits only at trained positions: rows are 13-20k tokens (tool schemas, tool results) but only
+        ~500 assistant tokens are trained, and full-length logits (20k x 131k vocab, fp32) cost >10 GB."""
 
         def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
             labels = inputs.pop("labels")
-            first = int((labels != -100).int().argmax(dim=1).min())
-            keep = labels.shape[1] - first + 1
-            logits = model(**inputs, logits_to_keep=keep).logits[:, :-1].float()
-            loss = torch.nn.functional.cross_entropy(logits.reshape(-1, logits.shape[-1]),
-                                                     labels[:, first:].reshape(-1), ignore_index=-100)
-            return loss
+            assert labels.shape[0] == 1, "batch size 1 (rows are packed by length, not batched)"
+            # logits only where a label is trained (~500 of ~13-20k positions): position t predicts label t+1
+            target = (labels[0] != -100).nonzero().squeeze(-1)
+            logits = model(**inputs, logits_to_keep=target - 1).logits[0].float()
+            return torch.nn.functional.cross_entropy(logits, labels[0, target])
 
     out = Path(args.out + ("-smoke" if args.smoke else ""))
     steps = 10 if args.smoke else int(-(-len(encoded) // args.grad_accum) * args.epochs)
