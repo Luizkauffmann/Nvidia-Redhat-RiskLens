@@ -1,0 +1,137 @@
+# ECL methodology. Everything that changes *how* allowance is calculated
+# lives here, separate from the data (what is being calculated).
+#
+# ECL_i = SUM_y  MarginalPD_i,y * LGD_i,y * EAD_i,y * DF_i,y      (annual time step)
+#   MarginalPD_i,y = S_i,y-1 * (1 - (1 - PD_i,y) ^ frac_y),  S = survival
+#   PD_i,y  = logistic(base_logit_i + macro_shift_y)   (macro shift from scenario path)
+#   CECL  : lifetime for every loan
+#   IFRS9 : Stage 1 -> 12-month, Stage 2/3 -> lifetime
+#   Defaulted loans (default_flag or DPD >= 90): PD = 1
+
+# Product taxonomy. `product_type` labels are kept identical to the legacy
+# Dataiku workbench; `portfolio` is a reporting grouping on top of them.
+products:
+  Mortgage:
+    portfolio: Mortgage
+    segment: RETAIL
+    amortization: AMORTIZING
+    pd_model: MORT_PD_v3
+    lgd_model: MORT_LGD_v2
+    ead_model: EAD_BAL_v1
+  Auto Loan:
+    portfolio: Auto
+    segment: RETAIL
+    amortization: AMORTIZING
+    pd_model: AUTO_PD_v2
+    lgd_model: AUTO_LGD_v2
+    ead_model: EAD_BAL_v1
+  Personal Loan:
+    portfolio: Consumer
+    segment: RETAIL
+    amortization: AMORTIZING
+    pd_model: CONS_PD_v2
+    lgd_model: CONS_LGD_v1
+    ead_model: EAD_BAL_v1
+  Credit Card:
+    portfolio: Credit Card
+    segment: RETAIL
+    amortization: REVOLVING
+    behavioral_life_years: 3
+    pd_model: CC_PD_v5
+    lgd_model: CC_LGD_v3
+    ead_model: EAD_CCF_v2
+  Commercial Term Loan:
+    portfolio: C&I
+    segment: COMMERCIAL
+    amortization: AMORTIZING
+    pd_model: CI_PD_v3
+    lgd_model: CI_LGD_v2
+    ead_model: EAD_BAL_v1
+  Revolving Credit Facility:
+    portfolio: C&I
+    segment: COMMERCIAL
+    amortization: REVOLVING
+    behavioral_life_years: 3
+    pd_model: CI_PD_v3
+    lgd_model: CI_LGD_v2
+    ead_model: EAD_CCF_v2
+  Equipment Lease:
+    portfolio: C&I
+    segment: COMMERCIAL
+    amortization: AMORTIZING
+    pd_model: CI_PD_v3
+    lgd_model: LEASE_LGD_v1
+    ead_model: EAD_BAL_v1
+  Commercial Real Estate:
+    portfolio: CRE
+    segment: COMMERCIAL
+    amortization: BULLET
+    pd_model: CRE_PD_v4
+    lgd_model: CRE_LGD_v3
+    ead_model: EAD_BAL_v1
+
+calculation:
+  max_life_years: 30
+  # Discounting: CECL here uses a non-discounted loss-rate style lifetime
+  # loss (permitted under ASC 326); IFRS 9 requires EIR discounting.
+  discount:
+    CECL: false
+    IFRS9: true
+  default_dpd: 90
+
+# Reasonable & supportable forecast, then straight-line reversion to the
+# long-run mean (deviation 0) — the standard CECL reversion pattern.
+macro:
+  variables: [unemployment_rate, gdp_growth, interest_rate, hpi_growth, cre_price_growth, inflation]
+  long_run_anchor:
+    unemployment_rate: 4.2
+    gdp_growth: 2.0
+    interest_rate: 3.5
+    hpi_growth: 3.0
+    cre_price_growth: 2.0
+    inflation: 2.5
+  reasonable_supportable_quarters: 8
+  reversion_quarters: 4
+  scenarios: [baseline, adverse, severe_adverse]
+
+# Delinquency logit add-ons shared by all PD scorecards.
+delinquency_logit:
+  "30": 1.30   # 30-59 DPD
+  "60": 2.20   # 60-89 DPD
+
+ifrs9:
+  sicr_pd_ratio: 2.0          # weighted 12m PD / origination PD
+  sicr_rating_downgrade: 3    # notches since origination
+  sicr_dpd: 30                # backstop
+  watchlist_is_sicr: true
+
+# Credit conversion factors for undrawn amounts, by EAD model and framework.
+# Under CECL, unconditionally cancellable card lines carry no allowance.
+ead_models:
+  EAD_BAL_v1: {CECL: 0.0, IFRS9: 0.0}
+  EAD_CCF_v2:
+    CECL: {Credit Card: 0.0, Revolving Credit Facility: 0.50}
+    IFRS9: {Credit Card: 0.30, Revolving Credit Facility: 0.50}
+
+# Sequential counterfactual attribution. The order is a methodology choice
+# and is reported alongside results.
+attribution:
+  steps:
+    - {id: runoff_exits,      driver: paydowns_runoff,  label: "Loans paid off / matured"}
+    - {id: balance_term,      driver: paydowns_runoff,  label: "Balance & term changes on existing loans"}
+    - {id: new_originations,  driver: portfolio_growth, label: "New originations"}
+    - {id: credit_migration,  driver: credit_deterioration, label: "Borrower credit migration"}
+    - {id: macro,             driver: macroeconomic,    label: "Macroeconomic scenario paths"}
+    - {id: scenario_weights,  driver: model_methodology, label: "Scenario weights"}
+    - {id: model_change,      driver: model_methodology, label: "Model versions / parameters"}
+    - {id: overlay,           driver: model_methodology, label: "Management overlays"}
+  drivers:
+    macroeconomic: "Macroeconomic scenario changes"
+    credit_deterioration: "Credit deterioration"
+    portfolio_growth: "Portfolio growth"
+    model_methodology: "Model / methodology & judgment"
+    paydowns_runoff: "Paydowns / runoff"
+  # Field groups moved from previous to current at each step.
+  portfolio_fields: [current_balance, undrawn_amount, remaining_term_months, maturity_date, interest_rate, utilization]
+  credit_fields: [fico, dti, ltv, dscr, leverage, rating_notch, internal_rating, watchlist_flag, days_past_due, delinquency_bucket, default_flag]
+  model_fields: [pd_model_id, lgd_model_id, ead_model_id]

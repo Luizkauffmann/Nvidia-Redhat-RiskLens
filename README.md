@@ -1,0 +1,126 @@
+# RiskLens AI: Multi-Agent CECL Investigator
+
+*Explain every dollar of credit loss.* Built for the NVIDIA × Red Hat Small Models Hack.
+
+Specialized small-model agents investigate why the credit-loss allowance moved. They call deterministic analytics tools and never invent numbers. This repo is at **Phase 3**: synthetic data, a CECL + IFRS 9 engine with separate PD / LGD / EAD models per product, an attribution that reconciles exactly, **30 JSON tools**, and an orchestrating agent that runs on Nemotron 3.5 Lightning (NVIDIA API or vLLM on Brev). Every number in its answers is checked against tool results.
+
+> **New to the team?** Start with [`docs/PROJECT_ARCHITECTURE.md`](docs/PROJECT_ARCHITECTURE.md): what lives in GitHub, Drive, Colab and Brev, how Nemotron is called, the plan for making the agents smarter (evaluation → fine-tuning → NeMo Gym), team setup and the weekend timeline.
+
+## Quick start
+
+```bash
+pip install -r requirements.txt
+python -m scripts.generate_demo_data     # ~20 s: data + official runs + ground truth
+python -m scripts.precompute_analytics   # ~75 s once: warms attribution + Shapley cache
+python -m scripts.phase1_report          # dimensions, allowance, drivers
+python -m pytest                         # 108 tests, ~3 min (also run in GitHub Actions)
+```
+
+```python
+from src.tools import call_tool
+r = call_tool("compare_allowance", {"previous_date": "July 2026", "current_date": "2026-08"})
+r.result["change"]      # 19238021.81  (dates are normalised to 2026-07-31 / 2026-08-31)
+r.provenance()          # call_id, tool_name, parameters, timestamp, result_sha256
+```
+
+## Colab + Google Drive workflow
+
+`notebooks/RiskLens_CECL_Workflow.ipynb` is the bank's **traditional CECL run** on a Google Drive folder. It loads the source extracts and model registry, runs the pre-run controls, books the official CECL and IFRS 9 runs with a run log, then shows the allowance movement analysis (waterfall, segments, macro Shapley, top borrowers, reconciliation) using the same tools the agents call.
+
+- Drive folder layout: `Risk Lens/{config,data,outputs,evaluation}`. Paths come from `RISKLENS_CONFIG_DIR`, `RISKLENS_DATA_DIR`, `RISKLENS_OUTPUT_DIR` and `RISKLENS_GROUND_TRUTH_DIR`, so the same code runs from the repo, on Brev or on Drive.
+- The pipeline steps are in `src/pipeline/cecl_run.py` (`seed_source_data`, `validate_inputs`, `run_official`). `scripts/generate_demo_data.py` uses the same steps.
+- One-time setup: add a `GITHUB_TOKEN` Colab secret (the repo is private).
+
+## Ask the agent (Phase 3)
+
+One orchestrating agent (`src/agents/orchestrator.py`) plans the investigation and calls the tools. Its answer then goes through a **grounding check**: every number must appear in a tool result from that run. Otherwise the agent gets one revision turn, naming the unsupported figures.
+
+```bash
+python -m scripts.ask "Why did the allowance increase?" --trace                    # mock planner, no model needed
+NVIDIA_API_KEY=nvapi-... python -m scripts.ask "Which borrowers should I investigate?" --provider nvidia --trace
+bash deploy/brev_serve_nemotron.sh                                                  # on Brev: vLLM + Nemotron on :8000
+RISKLENS_LLM_BASE_URL=http://<brev-host>:8000/v1 python -m scripts.ask "..." --provider vllm
+python -m scripts.check_llm --provider nvidia                                       # smoke test: chat + one tool call
+```
+
+| Backend | Endpoint | Model id |
+|---|---|---|
+| `nvidia` | `https://integrate.api.nvidia.com/v1` (NVIDIA API catalog) | `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| `vllm` | your Brev instance, `http://<host>:8000/v1` | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` |
+| `mock` | none (deterministic keyword planner for tests and offline demos) | `mock-planner` |
+
+Small-model safeguards: per-agent tool allow-lists, structured errors with hints, argument repair, parsing of tool calls the model writes as text (Qwen3-coder XML, `<tool_call>` JSON, fenced JSON), duplicate-call suppression, result compaction, and the grounding check. `AgentRun.metrics()` reports all of them for the Tool-Calling track. In Colab, use `notebooks/RiskLens_Agent.ipynb`.
+
+## The demo story (seeded, reproducible)
+
+| CECL | July 2026 | August 2026 |
+|---|---:|---:|
+| Loans | 50,000 | 49,892 |
+| Balance | $7.61B | $7.63B |
+| Allowance | **$99.06M** | **$118.30M** |
+
+**Change: +$19.24M (+19.4%), residual $0.00, reconciliation PASS**
+
+| Driver | Sequential (reported) | Reverse order | Shapley |
+|---|---:|---:|---:|
+| Macroeconomic scenario changes | **+$10.34M** (54%) | +$9.49M | +$9.93M |
+| Credit deterioration | +$7.48M (39%) | +$8.26M | +$7.87M |
+| Portfolio growth | +$2.19M | +$2.41M | +$2.30M |
+| Model / methodology & judgment (scenario weights) | +$1.88M | +$1.41M | +$1.64M |
+| Paydowns / runoff | −$2.66M | −$2.32M | −$2.50M |
+
+Macro is the primary driver under all three methods. The reconciliation tool checks this, because credit and macro interact (deterioration costs more under a worse forecast).
+
+- **Macro:** unemployment is the top variable (+$4.41M, Shapley), then CRE prices (+$2.94M). CRE prices lead inside CRE; unemployment leads everywhere else.
+- **CRE** is $13.9M of the change. The 20 injected office/retail borrowers go from 2.0% to 5.2% PD (EAD-weighted). CP_040408 is #1: down 3 notches (BB+ → B+), DSCR 1.33 → 1.16, LTV 0.68 → 0.74, added to the watchlist.
+- **Growth / runoff:** $139M originated (including $40M of new CRE), and $157M ran off or paid down.
+- **Models:** no version or parameter change (CRE_PD_v4 in both months; CRE_PD_v5 is still in validation). Scenario weights moved toward severe (10% → 12%, +$1.88M). Overlays are unchanged.
+- **IFRS 9** runs on the same data ($43.9M → $57.1M). There, credit is the main driver because of Stage 2 migration.
+
+## Tools (`src/tools`)
+
+Every tool returns JSON-compatible dicts and is called through `call_tool`, which validates and repairs arguments (`"cre"` → `"CRE"`, `"Aug 2026"` → `"2026-08-31"`). Bad calls get a structured error with a recovery hint (`available_dates`, `did_you_mean`, …). Each call is logged with provenance.
+
+| Agent | Tools |
+|---|---|
+| Portfolio | `compare_portfolios`, `calculate_balance_change` (exact bridge), `calculate_new_originations`, `calculate_paydowns`, `calculate_ead_change`, `calculate_segment_attribution`, `calculate_portfolio_attribution` |
+| Credit | `calculate_pd_migration` (base vs macro PD), `calculate_lgd_migration`, `calculate_rating_migration`, `identify_top_contributors` (reason codes), `compare_borrower_periods` (PD logit by feature), `get_loan_details`, `get_counterparty_details` |
+| Macro | `compare_macro_scenarios`, `compare_scenario_weights`, `calculate_macro_attribution`, `calculate_variable_attribution` (exact Shapley), `run_scenario_analysis`, `calculate_segment_macro_sensitivity` |
+| Model Risk | `compare_model_versions`, `compare_model_parameters`, `compare_management_overlays`, `get_model_metadata` |
+| Reconciliation | `reconcile_allowance_change` (reported vs explained, ties, order robustness, PASS / WARNING / FAIL) |
+| Shared | `get_reporting_context`, `get_allowance_summary`, `compare_allowance`, `calculate_ecl`, `get_portfolio_snapshot` |
+
+`tool_schemas(agent)` returns OpenAI-style function schemas (accepted by NIM and vLLM) restricted to that agent's allow-list in `config/agents.yaml`. Each specialist sees 11–15 tools instead of 30, which keeps prompts small for small models.
+
+## Layout
+
+```
+config/      settings, methodology (ECL math), models (scorecards), demo_story (injected scenario), reconciliation, agents
+src/cecl/    engine.py (CECL + IFRS 9, macro sweep), scenarios.py (R&S + reversion), attribution.py (exact waterfall + Shapley)
+src/data/    generator.py (seeded synthetic data), loader.py (DataStore)
+src/pipeline/ cecl_run.py (traditional workflow: seed, validate, book official runs + run log)
+src/tools/   base.py (registry, validation, provenance, cache) + allowance / portfolio / credit / macro / model / reconciliation tools
+src/llm/     provider.py (backends + config), openai_compat.py (NVIDIA API / vLLM / NIM), mock_provider.py
+src/agents/  base.py (tool loop), orchestrator.py (Phase 3 agent + prompt), grounding.py (number check)
+scripts/     generate_demo_data.py, precompute_analytics.py, phase1_report.py
+notebooks/   RiskLens_CECL_Workflow.ipynb (Colab + Drive), RiskLens_Agent.ipynb (ask Nemotron)
+deploy/      brev_serve_nemotron.sh (vLLM on Brev)
+tests/       engine, data, attribution vs ground truth, reconciliation, tools (demo questions answered via tools)
+docs/        PROJECT_ARCHITECTURE.md (team guide), ARCHITECTURE.md (engine/tool internals), LEGACY_AUDIT.md
+```
+
+## Roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Synthetic data, CECL + IFRS 9 engine, exact attribution, ground truth | ✅ |
+| 2 | Deterministic JSON tools, argument repair, provenance log, Shapley robustness checks | ✅ |
+| 3 | Single orchestrating agent: Nemotron via NVIDIA API or vLLM, tool loop, grounding check, run metrics | ✅ (live model run pending) |
+| 4 | Specialized agents: Portfolio, Credit, Macro, Model Risk, Reconciliation | next |
+| 5 | Streamlit UI (KPIs, waterfall, chat) | |
+| 6 | NVIDIA Nemotron 3.5 Lightning via Red Hat vLLM / NIM on Brev | |
+| 7 | Evaluation vs ground truth: tool-call accuracy, routing, reconciliation | |
+
+All data is synthetic. Ground truth (`data/ground_truth/`) is for evaluation only; tools and agents must not read it (a test enforces this for `src/tools`).
+
+Licensed under Apache-2.0 (see `LICENSE`).

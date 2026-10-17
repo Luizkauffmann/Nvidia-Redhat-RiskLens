@@ -1,0 +1,132 @@
+# Agent configuration (Phase 3+). Tool lists are the allow-lists each agent
+# receives as tool schemas; keep them in sync with the @tool tags in src/tools
+# (tests/test_tools.py checks this). Smaller lists = smaller prompts for small models.
+llm:
+  # mock   = deterministic planner (tests / offline)
+  # nvidia = NVIDIA API catalog (build.nvidia.com), needs NVIDIA_API_KEY
+  # vllm   = self-hosted vLLM / Red Hat AI on Brev (set RISKLENS_LLM_BASE_URL, e.g. http://<brev-host>:8000/v1)
+  # Env overrides: RISKLENS_LLM_PROVIDER, RISKLENS_LLM_BASE_URL, RISKLENS_LLM_MODEL, RISKLENS_LLM_API_KEY
+  provider: mock
+  model: nvidia/nemotron-3.5-lightning-30b-a3b   # 30B total / 3B active (hackathon limit: <= 33B total)
+  temperature: 0.6           # NVIDIA suggests 1.0 for chat; lower is steadier for tool calling
+  top_p: 0.95
+  max_tokens: 8192           # includes reasoning tokens on vLLM
+  enable_thinking: true      # chat_template_kwargs.enable_thinking
+  reasoning_budget: 4096     # NVIDIA API only
+  timeout_s: 120
+  max_steps: 8               # model turns per investigation
+  max_tool_calls: 12
+  result_chars: 6000         # tool results are compacted to this size before going back to the model
+agents:
+  orchestrator:
+    description: "Plans the investigation, delegates to specialists, writes the final explanation. Sees every tool but should delegate."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - calculate_ecl
+      - get_portfolio_snapshot
+      - calculate_pd_migration
+      - calculate_lgd_migration
+      - calculate_rating_migration
+      - identify_top_contributors
+      - get_loan_details
+      - get_counterparty_details
+      - compare_borrower_periods
+      - compare_macro_scenarios
+      - compare_scenario_weights
+      - calculate_macro_attribution
+      - calculate_variable_attribution
+      - run_scenario_analysis
+      - calculate_segment_macro_sensitivity
+      - compare_model_versions
+      - compare_model_parameters
+      - compare_management_overlays
+      - get_model_metadata
+      - compare_portfolios
+      - calculate_balance_change
+      - calculate_new_originations
+      - calculate_paydowns
+      - calculate_ead_change
+      - calculate_segment_attribution
+      - calculate_portfolio_attribution
+      - reconcile_allowance_change
+  portfolio_agent:
+    description: "Exposure movements: balances, originations, runoff, EAD, segment attribution."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - get_portfolio_snapshot
+      - identify_top_contributors
+      - get_loan_details
+      - get_counterparty_details
+      - compare_portfolios
+      - calculate_balance_change
+      - calculate_new_originations
+      - calculate_paydowns
+      - calculate_ead_change
+      - calculate_segment_attribution
+      - calculate_portfolio_attribution
+  credit_agent:
+    description: "Borrower deterioration: PD / LGD / rating migration, top contributors, borrower drill-downs."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - get_portfolio_snapshot
+      - calculate_pd_migration
+      - calculate_lgd_migration
+      - calculate_rating_migration
+      - identify_top_contributors
+      - get_loan_details
+      - get_counterparty_details
+      - compare_borrower_periods
+      - get_model_metadata
+      - calculate_ead_change
+      - calculate_segment_attribution
+      - calculate_portfolio_attribution
+  macro_agent:
+    description: "Economic scenarios: forecast changes, scenario weights, variable attribution, sensitivities."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - compare_macro_scenarios
+      - compare_scenario_weights
+      - calculate_macro_attribution
+      - calculate_variable_attribution
+      - run_scenario_analysis
+      - calculate_segment_macro_sensitivity
+      - get_model_metadata
+      - calculate_segment_attribution
+      - calculate_portfolio_attribution
+  model_risk_agent:
+    description: "Governance: model versions and parameters, overlays, scenario weights, engine reproduction."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - calculate_ecl
+      - compare_macro_scenarios
+      - compare_scenario_weights
+      - run_scenario_analysis
+      - compare_model_versions
+      - compare_model_parameters
+      - compare_management_overlays
+      - get_model_metadata
+      - calculate_portfolio_attribution
+  reconciliation_agent:
+    description: "Numerical validation: reported vs explained change, ties, order robustness."
+    tools:
+      - get_reporting_context
+      - get_allowance_summary
+      - compare_allowance
+      - calculate_ecl
+      - calculate_macro_attribution
+      - calculate_variable_attribution
+      - compare_model_versions
+      - compare_management_overlays
+      - calculate_segment_attribution
+      - calculate_portfolio_attribution
+      - reconcile_allowance_change

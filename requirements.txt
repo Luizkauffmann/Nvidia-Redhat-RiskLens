@@ -1,0 +1,14 @@
+# Core analytics
+numpy>=1.26
+pandas>=2.2
+pyarrow>=14
+pyyaml>=6
+pytest>=8
+
+# Agents (Phase 3+)
+openai>=1.40             # OpenAI-compatible client: NVIDIA API catalog, vLLM, NIM
+
+# Later phases (not needed yet)
+# streamlit>=1.35        # Phase 5 UI
+# plotly>=5.20           # waterfall / charts
+# cudf-cu12              # optional RAPIDS acceleration on Brev GPUs

@@ -1,0 +1,9 @@
+[project]
+name = "risklens-cecl"
+version = "0.1.0"
+description = "RiskLens AI — multi-agent CECL / IFRS 9 allowance investigator (NVIDIA x Red Hat Small Models Hack)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

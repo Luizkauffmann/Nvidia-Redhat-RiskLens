@@ -1,0 +1,102 @@
+# Model registry parameters (source of truth for the deterministic engine).
+#
+# PD scorecards (annual PD, logit scale):
+#   base_logit = intercept + SUM_f coef_f * (x_f - center_f) + delinquency add-on
+#   macro_shift_y = SUM_v macro_sensitivity_v * (x_v,y - long_run_anchor_v)
+# A missing feature contributes 0 (treated as at its center).
+# Intercept = logit(target annual PD at feature centers).
+#
+# LGD models (linear, clipped):
+#   LGD = base + SUM_f coef_f * (x_f - center_f) + SUM_v macro_sensitivity_v * dev_v
+#
+# Model versions referenced by loans live in data (model_assignments.csv);
+# this file must contain every version that any reporting date uses.
+
+pd_models:
+  MORT_PD_v3:
+    intercept: -6.32          # ~0.18% annual PD at centers
+    features:
+      fico: {center: 750, coef: -0.012}
+      ltv:  {center: 0.70, coef: 2.0}
+      dti:  {center: 0.33, coef: 2.5}
+    macro_sensitivity: {unemployment_rate: 0.16, gdp_growth: -0.06, interest_rate: 0.05, hpi_growth: -0.03}
+  AUTO_PD_v2:
+    intercept: -4.49          # ~1.1%
+    features:
+      fico: {center: 715, coef: -0.011}
+      ltv:  {center: 0.90, coef: 1.0}
+      dti:  {center: 0.33, coef: 1.8}
+    macro_sensitivity: {unemployment_rate: 0.14, gdp_growth: -0.06, interest_rate: 0.04, inflation: 0.04}
+  CONS_PD_v2:
+    intercept: -3.42          # ~3.2%
+    features:
+      fico: {center: 690, coef: -0.011}
+      dti:  {center: 0.35, coef: 2.0}
+    macro_sensitivity: {unemployment_rate: 0.16, gdp_growth: -0.06, interest_rate: 0.05, inflation: 0.05}
+  CC_PD_v5:
+    intercept: -3.38          # ~3.3%
+    features:
+      fico:        {center: 715, coef: -0.013}
+      utilization: {center: 0.35, coef: 1.5}
+      dti:         {center: 0.33, coef: 1.2}
+    macro_sensitivity: {unemployment_rate: 0.18, gdp_growth: -0.05, interest_rate: 0.05, inflation: 0.05}
+  CI_PD_v3:
+    intercept: -4.86          # ~0.77%
+    features:
+      rating_notch:   {center: 10, coef: 0.28}
+      dscr:           {center: 1.50, coef: -0.6}
+      leverage:       {center: 3.0, coef: 0.15}
+      watchlist_flag: {center: 0, coef: 0.60}
+    macro_sensitivity: {unemployment_rate: 0.10, gdp_growth: -0.10, interest_rate: 0.08}
+  CRE_PD_v4:
+    intercept: -4.86          # ~0.77%
+    features:
+      rating_notch:   {center: 10, coef: 0.25}
+      dscr:           {center: 1.45, coef: -0.8}
+      ltv:            {center: 0.62, coef: 1.5}
+      watchlist_flag: {center: 0, coef: 0.40}
+    macro_sensitivity: {unemployment_rate: 0.10, gdp_growth: -0.06, interest_rate: 0.10, cre_price_growth: -0.03}
+
+lgd_models:
+  MORT_LGD_v2:
+    base: 0.18
+    features: {ltv: {center: 0.70, coef: 0.40}}
+    macro_sensitivity: {hpi_growth: -0.008}
+    floor: 0.05
+    cap: 0.60
+  AUTO_LGD_v2:
+    base: 0.45
+    features: {ltv: {center: 0.90, coef: 0.20}}
+    macro_sensitivity: {unemployment_rate: 0.005}
+    floor: 0.20
+    cap: 0.80
+  CONS_LGD_v1:
+    base: 0.75
+    features: {}
+    macro_sensitivity: {unemployment_rate: 0.005}
+    floor: 0.50
+    cap: 0.95
+  CC_LGD_v3:
+    base: 0.85
+    features: {}
+    macro_sensitivity: {}
+    floor: 0.60
+    cap: 0.95
+  CI_LGD_v2:
+    base: 0.40
+    features: {}
+    macro_sensitivity: {gdp_growth: -0.005}
+    floor: 0.20
+    cap: 0.70
+  LEASE_LGD_v1:
+    base: 0.35
+    features: {}
+    macro_sensitivity: {gdp_growth: -0.004}
+    floor: 0.15
+    cap: 0.70
+  CRE_LGD_v3:
+    base: 0.30
+    features: {ltv: {center: 0.62, coef: 0.45}}
+    macro_sensitivity: {cre_price_growth: -0.006}
+    floor: 0.10
+    cap: 0.70

@@ -1,0 +1,84 @@
+# Knobs for the synthetic July -> August 2026 story. The generator reads this
+# file; changing it changes the data (and the ground truth) reproducibly.
+
+# Starting book composition (July). Counts sum to settings.n_loans.
+product_mix:
+  Mortgage: 7000
+  Auto Loan: 11000
+  Personal Loan: 7000
+  Credit Card: 18000
+  Commercial Term Loan: 2900
+  Revolving Credit Facility: 1200
+  Equipment Lease: 1600
+  Commercial Real Estate: 1300
+
+# Macro scenario paths: peak deviation from the long-run anchor (in the
+# variable's own units) for each vintage and scenario. Paths ramp to the peak
+# around quarter 4-5 and fade by quarter 12.
+macro_peak_deviation:
+  "2026-07-31":
+    baseline:       {unemployment_rate: 0.40, gdp_growth: -0.40, interest_rate: 0.50, hpi_growth: -1.0, cre_price_growth: -2.0, inflation: 0.30}
+    adverse:        {unemployment_rate: 2.20, gdp_growth: -2.50, interest_rate: 0.25, hpi_growth: -6.0, cre_price_growth: -12.0, inflation: 0.80}
+    severe_adverse: {unemployment_rate: 4.30, gdp_growth: -5.00, interest_rate: -0.50, hpi_growth: -14.0, cre_price_growth: -25.0, inflation: 1.20}
+  "2026-08-31":   # deliberately worse: unemployment up most, CRE values down, rates still elevated
+    baseline:       {unemployment_rate: 1.10, gdp_growth: -0.90, interest_rate: 0.60, hpi_growth: -1.6, cre_price_growth: -4.0, inflation: 0.35}
+    adverse:        {unemployment_rate: 3.00, gdp_growth: -3.00, interest_rate: 0.40, hpi_growth: -7.0, cre_price_growth: -15.0, inflation: 0.90}
+    severe_adverse: {unemployment_rate: 5.00, gdp_growth: -5.60, interest_rate: -0.30, hpi_growth: -15.0, cre_price_growth: -28.0, inflation: 1.30}
+macro_path_shape: [0.55, 0.75, 0.90, 1.00, 1.00, 0.90, 0.75, 0.60, 0.45, 0.30, 0.15, 0.0]
+
+scenario_weights:
+  "2026-07-31": {baseline: 0.60, adverse: 0.30, severe_adverse: 0.10}
+  "2026-08-31": {baseline: 0.58, adverse: 0.30, severe_adverse: 0.12}
+
+# Qualitative overlays (unchanged month over month in this story).
+management_overlays:
+  - {overlay_id: OVL_CRE_OFFICE, portfolio: CRE, amount: 1500000, reason: "Office sector refinancing risk not captured by CRE_PD_v4"}
+  - {overlay_id: OVL_CONSUMER_STUDENT, portfolio: Consumer, amount: 400000, reason: "Student-loan repayment restart impact on unsecured consumer"}
+
+# Credit deterioration cohort: CRE borrowers whose credit quality worsens.
+cre_cohort:
+  n_borrowers: 20
+  property_types: [Office, Retail]
+  borrower_exposure_range: [5000000, 12000000]   # July exposure per borrower
+  largest_borrower_exposure: 18000000
+  july: {rating_notch: [11, 12], dscr: [1.25, 1.38], ltv: [0.66, 0.72]}
+  august_shock:
+    rating_downgrade_notches: [1, 2]       # largest borrower gets the max + 1
+    dscr_drop: [0.07, 0.12]
+    property_value_decline: [0.04, 0.07]    # LTV = balance / value
+    watchlist_share: 0.3
+    dpd_30_count: 1
+
+# Month-on-month behaviour of the rest of the book.
+background:
+  initial_dpd_mix:   # share of July book at DPD 0 / 15 / 45 / 75 / 120
+    RETAIL: [0.977, 0.010, 0.006, 0.004, 0.003]
+    COMMERCIAL: [0.995, 0.0, 0.003, 0.001, 0.001]
+  monthly_payoff_rate:
+    Mortgage: 0.007
+    Auto Loan: 0.012
+    Personal Loan: 0.015
+    Credit Card: 0.004
+    Commercial Term Loan: 0.004
+    Revolving Credit Facility: 0.002
+    Equipment Lease: 0.006
+    Commercial Real Estate: 0.003
+  retail_fico_drift: {mean: 0.0, sd: 6.0}
+  retail_roll_rate: 0.006      # share of current loans rolling into 1-29 and into 30-59 DPD (each)
+  retail_cure_rate: 0.35       # share of delinquent loans curing
+  chargeoff_rate: 0.25         # share of defaulted loans charged off each month
+  commercial_downgrade_rate: 0.015
+  commercial_upgrade_rate: 0.015
+  commercial_renewal_rate: 0.85   # matured commercial loans renewed (term extended), not exited
+
+# August new business.
+originations:
+  Mortgage: 110
+  Auto Loan: 520
+  Personal Loan: 200
+  Credit Card: 650
+  Commercial Term Loan: 45
+  Revolving Credit Facility: 15
+  Equipment Lease: 40
+  Commercial Real Estate: 12
+new_cre_exposure: 40000000     # total balance of the 12 new CRE loans

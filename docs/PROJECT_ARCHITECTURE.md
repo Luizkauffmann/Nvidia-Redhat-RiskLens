@@ -1,0 +1,289 @@
+# RiskLens AI: how the whole project fits together
+
+*Team guide for the NVIDIA × Red Hat Small Models Hack. Read this first, then `README.md` (how to run) and `docs/ARCHITECTURE.md` (engine and tool internals).*
+
+**One sentence:** the bank's CECL run produces the numbers, deterministic tools expose them, and small Nemotron agents decide which tools to call and explain the result. Every figure an agent writes is checked against a tool result.
+
+---
+
+## 1. System map
+
+```mermaid
+flowchart LR
+  subgraph GH["GitHub · risklens-cecl (source of truth for code)"]
+    code["src/ engine · tools · agents<br/>config/ · tests/ · notebooks/ · deploy/"]
+  end
+  subgraph DR["Google Drive · Risk Lens (the bank's data)"]
+    cfg["config/<br/>scorecards, methodology"]
+    data["data/<br/>extracts + official runs"]
+    bank["databank/<br/>CSV for people"]
+    out["outputs/<br/>cache, agent logs"]
+    ev["evaluation/<br/>ground truth"]
+  end
+  subgraph CO["Colab (CPU, no GPU needed)"]
+    wf["RiskLens_CECL_Workflow<br/>traditional CECL run"]
+    ag["RiskLens_Agent<br/>ask Nemotron"]
+  end
+  subgraph BR["NVIDIA Brev (GPU)"]
+    vllm["vLLM · Nemotron 3.5 Lightning<br/>(Red Hat vLLM)"]
+    app["Streamlit web app"]
+    train["eval · fine-tuning<br/>NeMo Gym"]
+  end
+  api["NVIDIA API catalog<br/>hosted Nemotron"]
+
+  code -- "git clone (token)" --> wf
+  code -- "git clone" --> ag
+  code -- "git clone" --> BR
+  wf -- "reads / books runs" --> data
+  wf --> bank
+  ag -- "tools read" --> data
+  ag -- "chat + tools" --> api
+  ag -. "or" .-> vllm
+  app -- "chat + tools" --> vllm
+  train --> vllm
+  ev -. "scoring only" .-> train
+```
+
+| Place | What lives there | Who changes it |
+|---|---|---|
+| **GitHub** `Luizkauffmann/risklens-cecl` | All code, config defaults, tests, notebooks, deploy scripts, these docs. CI runs `pytest` on every push | Everyone, via branches and pull requests |
+| **Google Drive** `Risk Lens/` | The demo bank's data: source extracts, official runs, the readable databank, caches and agent logs, ground truth | The workflow notebook writes it. People edit `config/models.yaml` there to try model changes |
+| **Colab** | Two notebooks that run the repo code against Drive: the traditional CECL run, and the agent | Run by anyone; notebook source lives in GitHub `notebooks/` |
+| **Brev (GPU)** | Nemotron served by vLLM, the Streamlit app, evaluation runs, fine-tuning jobs | Whoever owns the GPU workstream |
+| **NVIDIA API catalog** | Hosted Nemotron 3.5 Lightning for development and as a fallback if Brev is down | Nobody (managed service) |
+
+Rule of thumb: **code in GitHub, data in Drive, compute in Colab (CPU) or Brev (GPU).** Nothing important lives only in a notebook cell or only on one laptop.
+
+---
+
+## 2. Data inputs
+
+A seeded generator stands in for the bank's systems. Because it's seeded, the data is identical everywhere (Colab, Brev, laptops), and on Brev you can regenerate it instead of copying it: `python -m scripts.generate_demo_data`.
+
+| Input (`data/`) | Stands in for | Used by |
+|---|---|---|
+| `loan_snapshots.parquet` (about 50k loans per month, 38 fields) | Loan servicing / core banking extract | Engine, portfolio and credit tools |
+| `counterparties.parquet` | Borrower master, credit bureau, financial spreading | Credit tools, borrower drill-downs |
+| `macro_scenarios.csv` | Economic forecast vendor (baseline / adverse / severe, 8 quarters) | Engine, macro tools |
+| `scenario_weights.csv`, `management_overlays.csv` | ALLL committee decisions | Engine, model-risk tools |
+| `model_metadata.csv`, `model_assignments.csv` + `config/models.yaml` | Model risk inventory and scorecard parameters | Engine, model-risk tools, pre-run controls |
+| `ecl_results.parquet`, `allowance_summary.csv`, `run_log.csv` | **Outputs** of the official run (the booked allowance) | Every tool; reconciliation compares against these |
+| `evaluation/ground_truth.json` | The story we injected (what really caused the change) | **Scoring only.** Tools and agents never read it (a test enforces this) |
+
+`databank/` holds the same tables as CSV per reporting date, with a data dictionary, for people to browse in Drive or Sheets.
+
+**Swapping in real data later (e.g. from Dataiku):** write extracts with the same columns into a folder, point `RISKLENS_DATA_DIR` at it, run the workflow notebook. No code changes.
+
+---
+
+## 3. The traditional run vs the agents
+
+```mermaid
+flowchart TB
+  subgraph T["Traditional CECL run (no AI): workflow notebook / scripts"]
+    s1["1 · Source extracts"] --> s2["2 · Pre-run controls<br/>17 checks: data quality,<br/>model approval, weights"]
+    s2 --> s3["3 · Official run<br/>PD × LGD × EAD per loan, lifetime,<br/>3 scenarios weighted + overlays"]
+    s3 --> s4["Booked results + run log"]
+  end
+  subgraph A["RiskLens (AI layer): explains the booked results"]
+    t["30 deterministic tools<br/>attribution · migration · macro Shapley ·<br/>model inventory · reconciliation"]
+    g["Agents (Nemotron)<br/>choose tools, read JSON, explain"]
+    c["Guardrails<br/>grounding check · reconciliation"]
+    t --> g --> c
+  end
+  s4 --> t
+```
+
+The agents **never calculate CECL**. They can only call tools, and tools only read the booked run (or re-run the engine for what-ifs). That is the core of the pitch: *small models don't need to know everything, they need to know which risk tool to call next.*
+
+---
+
+## 4. How a question gets answered
+
+```mermaid
+sequenceDiagram
+  actor U as Risk manager
+  participant UI as Streamlit / Colab
+  participant O as Orchestrator (Nemotron)
+  participant S as Specialist agents (Nemotron)
+  participant T as call_tool()
+  participant E as Engine + booked runs
+  U->>UI: "Why did the allowance increase in August?"
+  UI->>O: question + reporting context
+  O->>S: delegate (Portfolio, Credit, Macro, Model Risk)
+  S->>T: tool call (JSON arguments)
+  T->>T: validate · repair args · log provenance
+  T->>E: run analytics
+  E-->>T: numbers
+  T-->>S: JSON result + call_id (or error + hint)
+  S-->>O: structured finding {driver, impact, evidence, call_ids}
+  O->>T: reconcile_allowance_change
+  T-->>O: PASS / WARNING / FAIL
+  O-->>UI: answer (Facts / Interpretation / Next steps)
+  UI->>UI: grounding check: every number in the answer matches a tool result
+  UI-->>U: answer + trace + badges
+```
+
+**Phase 3 (built):** one orchestrator with all 30 tools (`src/agents/orchestrator.py`).
+
+**Phase 4 (next):** specialists reuse the same `ToolAgent` loop with their own tool allow-list (11–15 tools each, `config/agents.yaml`) and a short role prompt. They return structured findings; the orchestrator plans, delegates, asks the Reconciliation Agent to check the totals, and writes the answer. Fewer tools per agent means shorter prompts and better tool choice from a small model. That's the Multi-Agent track argument.
+
+| Agent | Answers | Key tools |
+|---|---|---|
+| Orchestrator | What to investigate, final explanation | delegates; `calculate_portfolio_attribution` |
+| Portfolio | Growth, runoff, exposure, segment mix | `calculate_balance_change`, `calculate_new_originations`, `calculate_paydowns` |
+| Credit | Which borrowers deteriorated and why (PD vs LGD) | `identify_top_contributors`, `compare_borrower_periods`, `calculate_pd_migration` |
+| Macro | Which variable, which portfolio, sensitivities | `calculate_variable_attribution` (Shapley), `calculate_segment_macro_sensitivity` |
+| Model Risk | Model versions, parameters, weights, overlays | `compare_model_versions`, `compare_scenario_weights` |
+| Reconciliation | Does it add up? Is the main driver robust? | `reconcile_allowance_change` |
+
+---
+
+## 5. Calling Nemotron
+
+All backends speak the OpenAI chat API with tool calling, so the agent code is identical everywhere. Switch with one setting (`config/agents.yaml → llm`, or env vars).
+
+| Backend | When | Endpoint | Model id |
+|---|---|---|---|
+| `nvidia` | Development, Colab, fallback | `https://integrate.api.nvidia.com/v1` + `NVIDIA_API_KEY` | `nvidia/nemotron-3.5-lightning-30b-a3b` |
+| `vllm` | **Demo and bounties** (Nemotron on Red Hat vLLM, on Brev) | `http://<brev-host>:8000/v1` (`deploy/brev_serve_nemotron.sh`) | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` |
+| `mock` | Tests, CI, offline demo | none | deterministic keyword planner |
+
+```bash
+python -m scripts.check_llm --provider vllm --base-url http://<brev-host>:8000/v1   # smoke test first
+python -m scripts.ask "Which borrowers should I investigate?" --provider vllm --trace
+```
+
+Model facts: 30B total / 3B active (mixture of experts), within the 33B limit. vLLM flags: `--enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser nemotron_v3`. Thinking mode is on by default (`enable_thinking`), which is slower but plans better.
+
+**Open question for the organizers:** does the 33B limit count the whole system or each model? With one shared Lightning base serving every agent, we're at 30B either way. A second base model would break the limit under the "whole system" reading.
+
+---
+
+## 6. Making the agents smart
+
+Most of the intelligence is engineering around the model, not inside it. Work through these levels in order; each is useful on its own, and later levels depend on the evaluation in level 3.
+
+| Level | What | Status |
+|---|---|---|
+| **0 · Tools do the thinking that must be exact** | Attribution, Shapley, migrations, reconciliation are code. The model never does arithmetic | ✅ done |
+| **1 · Prompts and playbooks** | Role prompts per agent, tool descriptions written for a small model, investigation playbooks ("allowance up → attribution → largest driver → drill into its segment → reconcile") and 2–3 worked examples in the prompt | Partly done (orchestrator); specialists next |
+| **2 · Guardrails** | Argument repair, error hints, duplicate-call suppression, step limits, grounding check with a revision turn, reconciliation control | ✅ done |
+| **3 · Evaluation harness** | Question bank scored against ground truth (see below). **Nothing gets tuned without a score** | Next, before any fine-tuning |
+| **4 · Fine-tuning (SFT / LoRA)** | Teach the model *our* investigation style from synthetic expert trajectories | Hackathon stretch |
+| **5 · RL in NeMo Gym** | Reward the model for reaching the right conclusion with valid, efficient tool calls | Design + small demo; full training after the event |
+
+### 6.1 Evaluation harness (level 3)
+
+We own the simulator, so we know the right answer to every question.
+
+| Metric | Measured how |
+|---|---|
+| Answer correctness | Facts in the answer vs `ground_truth.json` (primary driver, primary portfolio, top macro variable, largest borrower, model changed?, weights changed?, reconciliation status) |
+| Tool selection | Expected tools called (e.g. a borrower question must hit `identify_top_contributors`) |
+| Argument validity | % of calls that pass validation first time; % repaired; % recovered after an error |
+| Grounding | % of answers whose numbers all trace to tool results |
+| Efficiency | Tool calls, model turns, tokens, seconds per question |
+
+Run it for: mock planner (floor), Nemotron with thinking off, with thinking on, single agent vs multi-agent, base vs fine-tuned. That table is the evidence the judges asked for ("evidence that specialization beats general-purpose").
+
+### 6.2 Training data factory (feeds levels 4 and 5)
+
+```mermaid
+flowchart LR
+  k["Story knobs<br/>demo_story.yaml<br/>macro shock, which portfolio<br/>deteriorates, model change,<br/>weight change, overlays"] --> gen["Generator<br/>N seeded scenarios"]
+  gen --> runs["Booked runs<br/>+ ground truth per scenario"]
+  q["Question templates<br/>+ paraphrases"] --> traj
+  runs --> traj["Expert trajectories<br/>scripted planner calls the right tools;<br/>teacher model writes the answer<br/>from tool results only"]
+  traj --> f{"Filters<br/>grounding PASS<br/>matches ground truth<br/>valid tool calls"}
+  f -- keep --> sft["SFT dataset<br/>OpenAI chat + tools JSONL"]
+  f -- reject --> x["discard"]
+  runs --> gym["NeMo Gym environment<br/>tools as actions, verifier = ground truth"]
+```
+
+- **Vary the story** so the model learns to *investigate*, not to memorise "macro, CRE, unemployment": some scenarios are credit-led, some growth-led, some have a real model change, some C&I deteriorates instead of CRE.
+- **Include recovery examples:** a bad argument, the tool's hint, then the corrected call. Small models learn tool-calling habits from these.
+- **Teacher model:** a larger model may *write* training answers offline, but only from tool results, and only answers that pass the grounding check and match ground truth are kept. The model we ship stays ≤ 33B.
+
+### 6.3 Fine-tuning plan (level 4) and compute reality
+
+- NVIDIA's published RL recipe for Nemotron 3.5 Lightning runs on **32 H100s (DAPO) to 344 GB200s (full RLVR)**. That isn't possible on hackathon credits, so **full RL is out of scope this weekend.**
+- Realistic for one Brev GPU: **LoRA SFT** on the trajectory dataset (a few thousand examples, 1–2 epochs). This must be verified on the day; tooling support for Lightning's hybrid MoE architecture is not confirmed. If LoRA on Lightning isn't workable, fall back to a smaller Nemotron/open model for one specialist (and re-check the parameter budget).
+- Publish the adapter and dataset card on Hugging Face (required by the Fine-Tuned track), and serve it with vLLM's LoRA support (one base model, one adapter per specialist, if vLLM supports LoRA for this architecture).
+
+### 6.4 NeMo Gym environment (level 5, "Best use of NeMo Gym" bounty)
+
+Our setup is a natural verifiable-reward environment: the actions are our 30 tools, every episode is a seeded scenario, and the verifier compares the final answer with that scenario's ground truth.
+
+| Reward component | Signal |
+|---|---|
+| Correct conclusion | +1 per ground-truth fact stated correctly (driver, portfolio, variable, borrower, model change, reconciliation) |
+| Grounded | answer passes the grounding check (else large penalty) |
+| Valid tool use | penalty per invalid / malformed call; small bonus for recovering |
+| Efficiency | small penalty per tool call beyond what's needed |
+
+For the hackathon: package the environment and verifier, run Nemotron through it as an **evaluation**, and show the reward curve for a handful of steps if compute allows. The full RL run is the post-hackathon roadmap. *(The NeMo Gym environment and verifier API details still need checking against the NeMo Gym docs on the day.)*
+
+---
+
+## 7. Hackathon tracks this covers
+
+| Track / bounty | Our evidence |
+|---|---|
+| **Multi-Agent Systems** (primary) | Orchestrator + 5 specialists with narrow tool lists, structured findings, reconciliation agent checking the others |
+| **Tool-Calling** | 30 typed tools, argument repair, structured error hints, text tool-call parsing, metrics per run (`AgentRun.metrics()`) |
+| **Fine-Tuned & Specialized** (stretch) | LoRA on synthetic CECL investigation trajectories, published on Hugging Face, scored with the eval harness |
+| **Best use of Nemotron 3.5 Lightning** | Every agent runs on it; thinking mode for planning |
+| **Best use of Red Hat vLLM** | Self-hosted on Brev with tool and reasoning parsers |
+| **Best use of NeMo Gym** | Verifiable-reward CECL investigation environment built from our simulator |
+
+---
+
+## 8. How the team works
+
+**Setup (each person, 10 minutes)**
+1. Ask Luiz for repo access, then `git clone https://github.com/Luizkauffmann/risklens-cecl && pip install -r requirements.txt && python -m scripts.generate_demo_data && python -m pytest -q`.
+2. Drive: Luiz shares the `Risk Lens` folder. In Drive, open *Shared with me*, then right-click the folder → *Organize → Add shortcut* → *My Drive*. The notebooks expect `/content/drive/MyDrive/Risk Lens`.
+3. Colab secrets: `GITHUB_TOKEN` (fine-grained, Contents: Read-only on this repo), `NVIDIA_API_KEY`, and later `BREV_VLLM_URL`. Never paste keys into cells, chats or commits.
+
+**Rules**
+- Branch per task (`feat/streamlit-ui`, `feat/specialists`, `feat/eval`), pull request into `main`, CI must pass. Small PRs; `main` must always demo.
+- Numbers come only from `src/tools`. If an agent needs a new number, add a tool (with a test), never prompt the model to compute it.
+- Changing the story or calibration → regenerate data → re-run `tests/test_attribution.py`.
+- Notebook changes go in `notebooks/` in GitHub; the Drive copies are refreshed from there.
+
+**Suggested split (up to 3 people)**
+
+| Workstream | Owns | First deliverable |
+|---|---|---|
+| A · Model & agents | Brev + vLLM, Phase 4 specialists, prompts/playbooks | `check_llm` green on Brev; multi-agent answers the 15 demo questions |
+| B · Product & demo | Streamlit app (KPIs, waterfall, chat, tool trace, badges), pitch | Clickable demo on mock, then on Nemotron |
+| C · Evaluation & training | Eval harness, scenario variants, trajectory data, LoRA / NeMo Gym | Baseline score table for the pitch |
+
+**Weekend timeline**
+
+| When | Milestone |
+|---|---|
+| Sat morning | Brev up, vLLM serving Nemotron, `check_llm` green; eval question bank drafted |
+| Sat midday | Specialists + orchestrator delegation; Streamlit skeleton on mock |
+| Sat afternoon | Eval baseline (mock vs Nemotron, single vs multi-agent); app on live Nemotron |
+| Sat night | Scenario variants + trajectory dataset; start LoRA run (if feasible); NeMo Gym environment |
+| Sun morning | Score base vs tuned; freeze `main`; rehearse the demo |
+| Sun 4 pm | Submit: repo, HF artifacts, demo video / live demo |
+
+---
+
+## 9. Status (keep updated)
+
+| Phase | | |
+|---|---|---|
+| 1 Data + engine + attribution | ✅ | CECL $99.06M → $118.30M (+$19.24M), residual $0 |
+| 2 Tools (30) | ✅ | provenance, repair, Shapley robustness |
+| Colab + Drive workflow, databank | ✅ | two notebooks in Drive |
+| 3 Orchestrator agent + grounding | ✅ | tested with mock and scripted endpoints; **live Nemotron run pending** (needs NVIDIA key / Brev) |
+| 4 Specialists | next | |
+| 5 Streamlit app | next | |
+| 6 Nemotron on Brev vLLM | waiting for access | `deploy/brev_serve_nemotron.sh` ready |
+| 7 Evaluation, fine-tuning, NeMo Gym | planned | section 6 |
+
+*Sources for the Nemotron and NeMo facts above: the NVIDIA Nemotron 3.5 Lightning model card on Hugging Face, build.nvidia.com, the NeMo RL "Nemotron 3.5 Lightning" guide, and the NeMo Gym docs.*

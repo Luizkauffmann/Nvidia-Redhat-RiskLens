@@ -1,0 +1,21 @@
+# Global settings for RiskLens AI.
+seed: 20260831
+
+reporting_dates:
+  - "2026-07-31"
+  - "2026-08-31"
+
+default_framework: CECL          # CECL | IFRS9
+frameworks: [CECL, IFRS9]
+
+paths:
+  generated: data/generated
+  outputs: data/outputs
+  ground_truth: data/ground_truth   # never read by tools/agents; evaluation only
+
+# Size of the starting (July) book. August is derived from July by
+# runoff + originations, so its count differs slightly.
+n_loans: 50000
+
+# Rounding used in human-facing reports only. Calculations are never rounded.
+report_currency_unit: 1000000

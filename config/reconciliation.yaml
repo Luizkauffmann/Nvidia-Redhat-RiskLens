@@ -1,0 +1,8 @@
+# Reconciliation controls. Residual is measured as a share of the absolute
+# reported allowance change.
+thresholds:
+  pass_max_pct: 0.1      # residual <= 0.1% of |change|  -> PASS
+  warning_max_pct: 1.0   # 0.1% < residual <= 1%        -> WARNING
+                         # residual > 1%                 -> FAIL
+# Absolute tolerance (dollars) used when the reported change is ~0.
+absolute_tolerance: 1.0
