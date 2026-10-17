@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Serve Nemotron 3.5 Lightning with vLLM on a Brev GPU instance (OpenAI-compatible API on :8000).
 #
-#   export HF_TOKEN=hf_...            # accept the model license on Hugging Face first
+#   export HF_TOKEN=hf_...            # optional: the model is not gated; a token only raises download rate limits
 #   bash deploy/brev_serve_nemotron.sh
 #
 # Then point RiskLens at it:
@@ -19,7 +19,7 @@ MAX_LEN="${MAX_LEN:-65536}"          # the model supports 1M tokens; 64k is plen
 GPU_UTIL="${GPU_UTIL:-0.90}"
 PORT="${PORT:-8000}"
 IMAGE="${IMAGE:-vllm/vllm-openai:v0.27.1}"
-: "${HF_TOKEN:?set HF_TOKEN (Hugging Face token with the Nemotron license accepted)}"
+HF_TOKEN="${HF_TOKEN:-}"            # optional (see above)
 
 docker run --rm --gpus all --ipc=host -p "${PORT}:8000" \
   -e HF_TOKEN="${HF_TOKEN}" -v "${HOME}/.cache/huggingface:/root/.cache/huggingface" \
