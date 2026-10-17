@@ -124,7 +124,7 @@ In a bank these extracts come from loan servicing, credit and finance systems. H
 display(pd.DataFrame(cecl_run.inventory(store)))
 loans = store.loans.assign(date=store.loans.as_of_date.dt.strftime("%Y-%m-%d"))
 book = loans.groupby(["portfolio", "date"]).agg(loans=("loan_id", "size"), balance=("current_balance", "sum")).unstack("date")
-book.style.format({c: M for c in book.columns if c[0] == "balance"} | {c: "{:,}" for c in book.columns if c[0] == "loans"})
+book.apply(lambda c: c.map(M) if c.name[0] == "balance" else c.map("{:,}".format))
 '''),
     md("""
 ### Risk model registry

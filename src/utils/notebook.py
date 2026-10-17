@@ -117,9 +117,10 @@ def ensure_gym_cli(verbose: bool = True) -> str | None:
                 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "uv"], check=True)
             uv = shutil.which("uv") or str(Path(sys.executable).parent / "uv")
             venv = ROOT / ".venv-gym"
-            subprocess.run([uv, "venv", "-q", "--seed", "--python", "3.13", str(venv)], check=True)
+            env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHOME")}
+            subprocess.run([uv, "venv", "-q", "--seed", "--python", "3.13", str(venv)], check=True, env=env)
             subprocess.run([uv, "pip", "install", "-q", "--python", str(venv / "bin" / "python"), "nemo-gym>=0.7.0", "uv"],
-                           check=True)
+                           check=True, env=env)
             os.environ["PATH"] = f"{venv_bin}{os.pathsep}{os.environ.get('PATH', '')}"
     except subprocess.CalledProcessError as exc:
         log(f"Could not install NeMo Gym ({exc}). The in-process evaluator still works.")

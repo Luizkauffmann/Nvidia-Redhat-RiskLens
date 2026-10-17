@@ -65,6 +65,12 @@ if not os.environ.get("VLLM_API_KEY"):
     POLICIES["vllm"] = replace(POLICIES["vllm"], api_key_env=None)
 
 
+def _clean_env() -> dict[str, str]:
+    """Environment for gym subprocesses: drop the kernel's PYTHONPATH/PYTHONHOME (Colab sets them),
+    which would leak packages into Gym's own Python 3.13 venvs."""
+    return {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP")}
+
+
 def gym_available() -> bool:
     return shutil.which("gym") is not None
 
@@ -135,7 +141,8 @@ def gym_servers(policy: Policy, log_path: Path | str | None = None, timeout_s: f
     print("$", _redact(cmd))
     mock = mock_policy_server(int(policy.url.rsplit(":", 1)[1].split("/")[0])) if policy.serve_mock else contextlib.nullcontext()
     with mock, log_path.open("w") as log:
-        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                                env=_clean_env())
         try:
             t0 = time.time()
             while True:
@@ -174,7 +181,7 @@ def collect_rollouts(input_path: Path | str, output_path: Path | str, limit: int
     if temperature is not None:
         cmd += ["--temperature", str(temperature)]
     print("$", " ".join(cmd))
-    proc = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=not stream)
+    proc = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=not stream, env=_clean_env())
     if proc.returncode != 0:
         tail = "" if stream else f":\n{proc.stdout[-3000:]}\n{proc.stderr[-3000:]}"
         raise RuntimeError(f"gym eval run failed (exit {proc.returncode}){tail}")
