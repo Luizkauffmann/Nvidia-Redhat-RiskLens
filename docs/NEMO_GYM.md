@@ -83,6 +83,8 @@ From Python or a notebook, `src.evaluation.gym_runner.run_gym_eval("mock" | "vll
 |---|---|---:|---:|---|
 | mock planner (keyword script) | train | 21 | 0.965 | Floor. Fails a paraphrase it has no keyword for ("Which segment drove…") and never says "increased" for PD |
 | mock planner | example, each of the 5 story variants | 15 each | 0.988 each | Same as the base story; only miss is the PD template (`evidence/story_variants/mock_baseline.json`) |
+| Nemotron 3.5 Lightning (BF16, vLLM on A100) | example, held-out `property_shock` | 15 × 4 | 0.964 / 0.751 | Thinking on / off. Off: 14 of 60 answers made no tool call. [Evidence](../evidence/lora_eval/README.md) |
+| Nemotron + LoRA adapter | example, held-out `property_shock` | 15 × 4 | 0.959 / **0.939** | Thinking on / off. Off: 0 of 60 without a tool call, 567 output tokens per episode vs 970 for base with thinking. [Evidence](../evidence/lora_eval/README.md) |
 | Nemotron 3.5 Lightning (BF16, vLLM on A100) | example | 15 | 0.977 | Lost points only on q14 (no CRE borrower named), two recovered tool errors and a few ungrounded figures. [Evidence](../evidence/nemotron_baseline/README.md) |
 
 ## Story variants
