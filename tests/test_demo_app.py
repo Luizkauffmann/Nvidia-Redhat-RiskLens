@@ -164,9 +164,13 @@ def test_failed_and_truncated_runs_are_flagged():
     assert row["mean_reward"] == 0.5 and row["failed_runs"] == 1 and row["truncated_runs"] == 1
 
 
-def test_team_runs_credit_the_specialists_tools():
+def test_team_runs_credit_the_specialists_tools(ground_truth, monkeypatch):
     """In team mode the orchestrator only shows ask_<specialist>; the specialist's own calls must count."""
     from demo_app import runlog
+    from src.evaluation.tasks import build_tasks
+
+    # Score against the test fixture's ground truth (CI has no data/ground_truth checked in).
+    monkeypatch.setattr(runlog, "_TASKS", {runlog._norm(t.question): t for t in build_tasks(ground_truth)})
 
     q = "Did probability of default increase between July and August?"          # needs calculate_pd_migration
     run, rec = runlog.ask(q, "team", {"provider": "mock"}, "mock team", record=False)
