@@ -74,6 +74,8 @@ def main() -> None:
     ap.add_argument("--mode", choices=["team", "orchestrator"], default="orchestrator")
     ap.add_argument("--thinking", action="store_true", help="leave reasoning on (slower)")
     ap.add_argument("--repeats", type=int, default=1)
+    ap.add_argument("--warmup", action="store_true",
+                    help="send the agent's prompt prefix once before timing (what the app's warm-up does)")
     ap.add_argument("--suite", choices=["core", "kb", "all"], default="core",
                     help="core = 5 allowance questions (baseline); kb = regulatory + factor questions (needs scripts.load_kb)")
     ap.add_argument("--summary", action="store_true")
@@ -89,6 +91,9 @@ def main() -> None:
     overrides = {"provider": a.provider, "base_url": a.base_url, "model": a.model,
                  "enable_thinking": True if a.thinking else False}
     questions = bench_questions(a.suite)
+    if a.warmup and a.provider != "mock":
+        from demo_app.warmup import warm_now
+        print(f"warm-up: {warm_now(overrides, a.mode)}s (not counted in the runs)", flush=True)
     for rep in range(a.repeats):
         for i, q in enumerate(questions, 1):
             _, rec = ask(q, a.mode, overrides, a.label, source="bench")
