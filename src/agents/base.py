@@ -13,12 +13,18 @@ Reliability features for small models:
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from src.agents.grounding import check_grounding
+
+# A "final answer" that is really a tool call the provider could not parse (e.g. a truncated
+# <tool_call><function=...> block from a small model). Never shown to the user as an answer.
+UNPARSED_TOOL_CALL = re.compile(r"<tool_call>|</?function[=>]|<parameter=|^\s*\{\s*\"name\"\s*:", re.M)
+MAX_FORMAT_RETRIES = 1
 from src.llm.provider import LLMProvider, LLMResponse
 from src.tools import REGISTRY, ToolCallLog, ToolCallRecord, call_tool, tool_schemas
 from src.tools.base import get_context
@@ -64,6 +70,7 @@ class AgentRun:
     tool_records: list[ToolCallRecord] = field(default_factory=list)
     grounding: dict[str, Any] | None = None
     revisions: int = 0
+    format_retries: int = 0                      # malformed tool calls returned as answers (see UNPARSED_TOOL_CALL)
     usage: dict[str, int] = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
     duration_s: float = 0.0
     messages: list[dict[str, Any]] = field(default_factory=list, repr=False)
@@ -81,7 +88,7 @@ class AgentRun:
             "recovered_after_error": _recoveries(recs),
             "text_fallback_tool_calls": sum(e.get("tool_format") == "text_fallback" for e in llm),
             "duplicate_calls_served": sum(e.get("duplicate", False) for e in self.events if e["type"] == "tool"),
-            "llm_turns": len(llm), "revisions": self.revisions,
+            "llm_turns": len(llm), "revisions": self.revisions, "format_retries": self.format_retries,
             "grounding": (self.grounding or {}).get("status"), **self.usage, "duration_s": self.duration_s,
         }
 
@@ -142,6 +149,18 @@ class ToolAgent:
                 if not answer:
                     msgs.append({"role": "user", "content": "Please give your final answer now, using only the tool results above."})
                     continue
+                if UNPARSED_TOOL_CALL.search(answer):
+                    if run.format_retries < MAX_FORMAT_RETRIES:
+                        run.format_retries += 1
+                        run.events.append({"type": "format_retry", "content_preview": answer[:200]})
+                        msgs.append({"role": "assistant", "content": answer})
+                        msgs.append({"role": "user", "content": (
+                            "Your last message looks like a tool call written as text, and it was not executed. "
+                            "Either call the tool using the tool-calling interface, or give your final answer in plain "
+                            "sentences using only the tool results above.")})
+                        continue
+                    answer = UNPARSED_TOOL_CALL.split(answer)[0].strip() or (
+                        "[RiskLens could not complete the investigation: the model kept returning a malformed tool call.]")
                 if self.check_numbers:
                     rep = check_grounding(answer, [r.result for r in run.tool_records if r.result] + [question])
                     run.grounding = rep.to_dict()

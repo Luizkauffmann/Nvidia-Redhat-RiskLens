@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from demo_app.runlog import ask, bench_questions, load_runs, runs_path, summary  # noqa: E402
+from demo_app.runlog import ask, bench_questions, effective_quality, load_runs, runs_path, summary  # noqa: E402
 
 
 def print_summary() -> None:
@@ -29,7 +29,7 @@ def print_summary() -> None:
         print("no runs logged yet")
         return
     cols = ["label", "runs", "median_duration_s", "median_llm_s", "mean_llm_turns", "mean_tool_calls",
-            "median_tokens_per_s", "grounded_pct", "mean_reward"]
+            "median_tokens_per_s", "grounded_pct", "mean_reward", "failed_runs", "truncated_runs"]
     print(" | ".join(cols))
     for r in rows:
         print(" | ".join(str(r[c]) for c in cols))
@@ -38,12 +38,13 @@ def print_summary() -> None:
 COLUMNS = [("label", "Label"), ("model", "Model"), ("runs", "Runs"), ("median_duration_s", "Median time (s)"),
            ("median_llm_s", "Median model time (s)"), ("mean_llm_turns", "Model turns"),
            ("mean_tool_calls", "Tool calls"), ("median_tokens_per_s", "Tokens/s"),
-           ("grounded_pct", "No unsupported numbers %"), ("mean_reward", "Mean quality (0-1)")]
+           ("grounded_pct", "No unsupported numbers %"), ("mean_reward", "Mean quality (0-1)"),
+           ("failed_runs", "Failed runs"), ("truncated_runs", "Truncated prompts")]
 
 
-def export(folder: Path) -> None:
-    """Write runs.jsonl (every logged run) and SUMMARY.md (per-model table + per-question detail)."""
-    runs = load_runs()
+def export(folder: Path, only: list[str] | None = None) -> None:
+    """Write runs.jsonl (logged runs, optionally only some labels) and SUMMARY.md (per-model table + per-question detail)."""
+    runs = [r for r in load_runs() if not only or r["label"] in only]
     folder.mkdir(parents=True, exist_ok=True)
     with open(folder / "runs.jsonl", "w") as fh:
         fh.writelines(json.dumps(r, default=str) + "\n" for r in runs)
@@ -56,7 +57,7 @@ def export(folder: Path) -> None:
     lines += ["", "## Per question", "", "| Label | Question | Time (s) | Model (s) | Turns | Tools used | Grounding | Quality | Facts |",
               "|---|---|---|---|---|---|---|---|---|"]
     for r in runs:
-        q = r.get("quality") or {}
+        q = effective_quality(r) or {}
         facts = f"{q['checks_passed']}/{q['checks_total']}" if q else "-"
         lines.append(f"| {r['label']} | {r['question']} | {r['duration_s']} | {r['llm_s']} | {r['llm_turns']} | "
                      f"{', '.join(r['tools_used']) or '-'} | {r['grounding']} | {q.get('reward', '-')} | {facts} |")
@@ -77,9 +78,10 @@ def main() -> None:
                     help="core = 5 allowance questions (baseline); kb = regulatory + factor questions (needs scripts.load_kb)")
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--export", type=Path, help="write runs.jsonl + SUMMARY.md to this folder")
+    ap.add_argument("--only", action="append", help="with --export: only runs with this label (repeatable)")
     a = ap.parse_args()
     if a.export:
-        export(a.export)
+        export(a.export, a.only)
         return
     if a.summary:
         print_summary()
