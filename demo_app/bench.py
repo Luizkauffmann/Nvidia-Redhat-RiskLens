@@ -76,7 +76,7 @@ def main() -> None:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--warmup", action="store_true",
                     help="send the agent's prompt prefix once before timing (what the app's warm-up does)")
-    ap.add_argument("--suite", choices=["core", "kb", "all"], default="core",
+    ap.add_argument("--suite", choices=["core", "kb", "all", "bank"], default="core",
                     help="core = 5 allowance questions (baseline); kb = regulatory + factor questions (needs scripts.load_kb)")
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--export", type=Path, help="write runs.jsonl + SUMMARY.md to this folder")

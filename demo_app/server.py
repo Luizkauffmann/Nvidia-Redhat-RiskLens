@@ -148,6 +148,9 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 def main() -> None:
     import uvicorn
 
+    from src.utils.notebook import load_dotenv
+    load_dotenv()          # NVIDIA_API_KEY etc. from the repo's git-ignored .env (existing env vars win)
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8050)

@@ -201,7 +201,8 @@ async function loadPack(ev) {
 function backendOverrides() {
   const b = $("backend").value;
   if (b === "ollama") return { provider: "vllm", base_url: "http://localhost:11434/v1", model: $("ollamamodel").value.trim() };
-  if (b === "vllm") return { provider: "vllm", base_url: $("baseurl").value };
+  if (b === "vllm") return { provider: "vllm", base_url: $("baseurl").value, model: $("ollamamodel").value.trim() || null };
+  if (b === "nvidia") return { provider: "nvidia" };   // key from NVIDIA_API_KEY (.env); model from config/agents.yaml
   return { provider: "mock" };
 }
 
@@ -300,13 +301,13 @@ async function init() {
   });
   $("backend").addEventListener("change", () => {
     $("urlrow").hidden = $("backend").value !== "vllm";
-    $("ollamarow").hidden = $("backend").value !== "ollama";
+    $("ollamarow").hidden = ["mock", "nvidia"].includes($("backend").value);
     warmUp();
   });
   ["mode", "ollamamodel", "baseurl"].forEach((id) => $(id).addEventListener("change", warmUp));
   if ($("backend").value !== "mock") {                // a restored selection: show the fields and warm up now
     $("urlrow").hidden = $("backend").value !== "vllm";
-    $("ollamarow").hidden = $("backend").value !== "ollama";
+    $("ollamarow").hidden = ["mock", "nvidia"].includes($("backend").value);
     warmUp();
   }
   $("pick").addEventListener("submit", loadPack);
