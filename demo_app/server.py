@@ -25,6 +25,7 @@ from pydantic import BaseModel  # noqa: E402
 
 from demo_app import runlog  # noqa: E402
 from demo_app.pack import build_pack  # noqa: E402
+from demo_app.warmup import Warmer  # noqa: E402
 from src.llm.provider import get_provider  # noqa: E402
 from src.tools import call_tool  # noqa: E402
 from src.tools.base import ToolError  # noqa: E402
@@ -32,6 +33,7 @@ from src.tools.base import ToolError  # noqa: E402
 STATIC = Path(__file__).parent / "static"
 DEMO_QUESTIONS = runlog.BENCH_QUESTIONS   # evaluation-bank questions, so every run from a chip gets a reward
 _agent_lock = threading.Lock()  # one agent run at a time: small local models, shared tool cache
+warmer = Warmer(_agent_lock)    # keeps a local model's prompt prefix cached (demo_app/warmup.py)
 
 app = FastAPI(title="RiskLens offline demo")
 
@@ -39,6 +41,14 @@ app = FastAPI(title="RiskLens offline demo")
 class ToolRequest(BaseModel):
     name: str
     arguments: dict[str, Any] = {}
+
+
+class WarmupRequest(BaseModel):
+    mode: str = "team"
+    provider: str | None = None
+    model: str | None = None
+    base_url: str | None = None
+    no_thinking: bool = True
 
 
 class AskRequest(BaseModel):
@@ -91,6 +101,7 @@ def ask(req: AskRequest) -> dict[str, Any]:
                  "enable_thinking": False if req.no_thinking else None}
     with _agent_lock:
         run, record = runlog.ask(req.question, req.mode, overrides, req.label, source="app", record=req.log_run)
+    warmer.touch()
     d = run.to_dict()
     team = next((e for e in run.events if e["type"] == "team"), None)
     return {"answer": run.answer, "status": run.status, "grounding": run.grounding, "provider": run.provider,
@@ -98,6 +109,19 @@ def ask(req: AskRequest) -> dict[str, Any]:
             "specialists": team["specialists"] if team else [], "quality": record["quality"],
             "timing": {k: record[k] for k in ("llm_s", "tool_s", "llm_turns", "tokens_per_s")},
             "context_truncated": record["context_truncated"]}
+
+
+@app.post("/api/warmup")
+def warmup(req: WarmupRequest) -> dict[str, Any]:
+    """Start warming the selected model's prompt prefix in the background and keep it warm while idle."""
+    overrides = {"provider": req.provider, "model": req.model, "base_url": req.base_url,
+                 "enable_thinking": False if req.no_thinking else None}
+    return warmer.start(overrides, req.mode)
+
+
+@app.get("/api/warmup")
+def warmup_status() -> dict[str, Any]:
+    return warmer.status()
 
 
 @app.get("/api/runs")
@@ -123,6 +147,9 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 def main() -> None:
     import uvicorn
+
+    from src.utils.notebook import load_dotenv
+    load_dotenv()          # NVIDIA_API_KEY etc. from the repo's git-ignored .env (existing env vars win)
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")

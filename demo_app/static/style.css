@@ -99,3 +99,9 @@ textarea { resize: vertical; width: 100%; }
 .trace .err { color: var(--pos); }
 .error { color: var(--pos); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.askrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.warm { font-size: 12px; color: var(--muted); }
+.warm.ready { color: var(--neg); }
+.warm.warming { color: var(--warn); }
+.warm.error { color: var(--pos); }

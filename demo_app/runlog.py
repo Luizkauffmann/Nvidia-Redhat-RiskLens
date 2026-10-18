@@ -106,8 +106,16 @@ def _tasks() -> dict[str, Any]:
     return {**(_TASKS or {}), **(_KB_TASKS or {})}
 
 
+def bank_questions() -> list[str]:
+    """The 15 evaluation-bank questions q01..q15 (no paraphrases), in order; needs ground truth."""
+    return [t.question for t in build_tasks(include_paraphrases=False)]
+
+
 def bench_questions(suite: str = "core") -> list[str]:
-    """core = the five allowance questions (committed baseline); kb = regulatory + factor questions; all = both."""
+    """core = the five allowance questions (committed baseline); kb = regulatory + factor questions; all = both;
+    bank = all 15 evaluation-bank questions (same set as the frontier reference)."""
+    if suite == "bank":
+        return bank_questions()
     return {"core": list(BENCH_QUESTIONS), "kb": list(KB_QUESTIONS.values()),
             "all": list(BENCH_QUESTIONS) + list(KB_QUESTIONS.values())}[suite]
 
@@ -136,11 +144,15 @@ def effective_quality(rec: dict[str, Any]) -> dict[str, Any] | None:
     return q
 
 
-def quality(question: str, run: Any) -> dict[str, Any] | None:
+def quality(question: str, run: Any, sub_runs: list[Any] | None = None) -> dict[str, Any] | None:
+    """Verifier score. In team mode the specialists' own tool calls count too (sub_runs): otherwise a delegated
+    answer loses tool-selection credit because the orchestrator only shows ask_<specialist>."""
     task = _tasks().get(_norm(question))
     if task is None:
         return None
     answer, calls = from_agent_run(run)
+    for sub in sub_runs or []:
+        calls = calls + from_agent_run(sub)[1]
     if failed(answer):
         return {"task_id": task.task_id, "reward": 0.0, "components": {}, "checks_passed": 0,
                 "checks_total": len(task.checks), "missing_tool_groups": [], "note": "failed run scored 0"}
@@ -157,9 +169,12 @@ def ask(question: str, mode: str = "team", overrides: dict[str, Any] | None = No
     provider = get_provider({k: v for k, v in (overrides or {}).items() if v is not None})
     log = ToolCallLog(config.path("outputs") / "demo_app_tool_calls.jsonl")
     build = build_team if mode == "team" else build_orchestrator
-    run = build(provider, log=log).run(question)
+    agent = build(provider, log=log)
+    run = agent.run(question)
+    sub_runs = list(getattr(agent, "sub_runs", []))       # team mode: the specialists' runs
     d = run.to_dict()
-    llm_s = sum(e.get("latency_ms", 0) for e in run.events if e["type"] == "llm") / 1000
+    # model time of the whole run, including the specialists' turns in team mode
+    llm_s = sum(e.get("latency_ms", 0) for r in [run, *sub_runs] for e in r.events if e["type"] == "llm") / 1000
     tool_s = sum(c.get("duration_ms") or 0 for c in d["tool_calls"]) / 1000
     usage = run.usage or {}
     desc = provider.describe()
@@ -173,7 +188,7 @@ def ask(question: str, mode: str = "team", overrides: dict[str, Any] | None = No
         "tokens_per_s": round(usage.get("completion_tokens", 0) / llm_s, 1) if llm_s else None,
         "tool_calls": len(d["tool_calls"]), "tool_errors": d["metrics"]["tool_errors"],
         "tools_used": run.tools_used, "grounding": (run.grounding or {}).get("status"),
-        "quality": quality(question, run), "answer": run.answer,
+        "quality": quality(question, run, sub_runs), "answer": run.answer, "scored_with_specialists": True,
     }
     rec["context_truncated"] = context_truncated(rec)
     if record:

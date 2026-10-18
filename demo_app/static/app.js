@@ -201,7 +201,8 @@ async function loadPack(ev) {
 function backendOverrides() {
   const b = $("backend").value;
   if (b === "ollama") return { provider: "vllm", base_url: "http://localhost:11434/v1", model: $("ollamamodel").value.trim() };
-  if (b === "vllm") return { provider: "vllm", base_url: $("baseurl").value };
+  if (b === "vllm") return { provider: "vllm", base_url: $("baseurl").value, model: $("ollamamodel").value.trim() || null };
+  if (b === "nvidia") return { provider: "nvidia" };   // key from NVIDIA_API_KEY (.env); model from config/agents.yaml
   return { provider: "mock" };
 }
 
@@ -238,6 +239,45 @@ async function ask() {
   } finally { $("askbtn").disabled = false; }
 }
 
+// ---------------------------------------------------------------- warm-up / keep-warm (local models)
+let warmTimer = null;
+const WARM_TEXT = {
+  warming: "Model warming up: first read of the agent prompt (about 1-2 min on a laptop)",
+  ready: "Model warm and kept warm",
+  error: "Warm-up failed",
+};
+
+function showWarm(st) {
+  const el = $("warmstate");
+  if (!st || st.state === "not_needed" || st.state === "idle") { el.textContent = ""; el.className = "warm"; return; }
+  let text = WARM_TEXT[st.state] || st.state;
+  if (st.state === "ready" && st.warm_s) text += ` (warm-up took ${st.warm_s}s)`;
+  if (st.state === "error" && st.error) text += `: ${st.error}`;
+  el.textContent = text;
+  el.className = `warm ${st.state}`;
+}
+
+async function pollWarm() {
+  clearTimeout(warmTimer);
+  try {
+    const st = await (await fetch("api/warmup")).json();
+    showWarm(st);
+    warmTimer = setTimeout(pollWarm, st.state === "warming" ? 4000 : 30000);
+  } catch (e) { /* server restarting; the next warm-up call will retry */ }
+}
+
+async function warmUp() {
+  if (STATIC) return;
+  const o = backendOverrides();
+  if (o.provider === "mock") { showWarm(null); return; }
+  try {
+    const r = await fetch("api/warmup", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: $("mode").value, ...o }) });
+    showWarm(await r.json());
+    pollWarm();
+  } catch (e) { showWarm({ state: "error", error: e.message }); }
+}
+
 async function init() {
   const ctx = await (await fetch(STATIC ? "data/context.json" : "api/context")).json();
   if (STATIC) {
@@ -261,8 +301,15 @@ async function init() {
   });
   $("backend").addEventListener("change", () => {
     $("urlrow").hidden = $("backend").value !== "vllm";
-    $("ollamarow").hidden = $("backend").value !== "ollama";
+    $("ollamarow").hidden = ["mock", "nvidia"].includes($("backend").value);
+    warmUp();
   });
+  ["mode", "ollamamodel", "baseurl"].forEach((id) => $(id).addEventListener("change", warmUp));
+  if ($("backend").value !== "mock") {                // a restored selection: show the fields and warm up now
+    $("urlrow").hidden = $("backend").value !== "vllm";
+    $("ollamarow").hidden = ["mock", "nvidia"].includes($("backend").value);
+    warmUp();
+  }
   $("pick").addEventListener("submit", loadPack);
   $("askbtn").addEventListener("click", ask);
   loadPack();
