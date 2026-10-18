@@ -181,7 +181,7 @@ Most of the intelligence is engineering around the model, not inside it. Work th
 | **1 · Prompts and playbooks** | Role prompts per agent, tool descriptions written for a small model, investigation playbooks ("allowance up → attribution → largest driver → drill into its segment → reconcile") and 2–3 worked examples in the prompt | Partly done (orchestrator); specialists next |
 | **2 · Guardrails** | Argument repair, error hints, duplicate-call suppression, step limits, grounding check with a revision turn, reconciliation control | ✅ done |
 | **3 · Evaluation harness** | Question bank scored against ground truth (see below). **Nothing gets tuned without a score** | Next, before any fine-tuning |
-| **4 · Fine-tuning (SFT / LoRA)** | Teach the model *our* investigation style from synthetic expert trajectories | LoRA on Lightning verified (smoke run); needs Nemotron rollouts as data |
+| **4 · Fine-tuning (SFT / LoRA)** | Teach the model *our* investigation style from synthetic expert trajectories | ✅ LoRA SFT on 401 of Nemotron's own passing rollouts (+ hint distillation): held-out no-reasoning mode 0.751 → 0.939; no gain with reasoning on ([evidence](../evidence/lora_eval/README.md)) |
 | **5 · RL in NeMo Gym** | Reward the model for reaching the right conclusion with valid, efficient tool calls | Design + small demo; full training after the event |
 
 ### 6.1 Evaluation harness (level 3)
@@ -310,6 +310,6 @@ For the hackathon: package the environment and verifier, run Nemotron through it
 | 5 Streamlit app | next | |
 | 6 Nemotron on Brev vLLM | waiting for access | `deploy/brev_serve_nemotron.sh` ready |
 | 7 Evaluation + NeMo Gym environment | ✅ | mock baseline 0.965; Nemotron scores next |
-| 7b Fine-tuning / RL | in progress | LoRA SFT on Lightning verified on A100 80 GB (`scripts/finetune_lora.py`); next: Nemotron rollouts → SFT data → full run; section 6.3 |
+| 7b Fine-tuning / RL | LoRA done; RL not started | Full LoRA run on one A100 (102 steps, 67 min); adapter served next to the base in vLLM and scored in Gym on the held-out story ([evidence](../evidence/lora_eval/README.md)). Adapter published: [gcav66/nemotron-3.5-lightning-risklens-lora](https://huggingface.co/gcav66/nemotron-3.5-lightning-risklens-lora). Next: more weight on the CRE drill-down; GRPO after the event. Section 6.3 |
 
 *Sources for the Nemotron and NeMo facts above: the NVIDIA Nemotron 3.5 Lightning model card on Hugging Face, build.nvidia.com, the NeMo RL "Nemotron 3.5 Lightning" guide, and the NeMo Gym docs.*

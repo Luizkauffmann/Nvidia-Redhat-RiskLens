@@ -113,9 +113,15 @@ def mock_policy_server(port: int = 8011) -> Iterator[subprocess.Popen | None]:
             proc.wait(timeout=10)
 
 
-def _model_args(policy: Policy) -> list[str]:
+# Hydra override (applied after the model-type config, which sets chat_template_kwargs: null): the chat
+# template then opens the answer with "<think></think>", the format the LoRA adapter is trained on.
+THINKING_OFF = "++policy_model.responses_api_models.vllm_model.chat_template_kwargs={enable_thinking:false}"
+
+
+def _model_args(policy: Policy, thinking: bool = True) -> list[str]:
     return ["--resources-server", "risklens_cecl", "--model-type", "vllm_model",
-            "--model", policy.model, "--model-url", policy.url, "--model-api-key", policy.api_key()]
+            "--model", policy.model, "--model-url", policy.url, "--model-api-key", policy.api_key(),
+            *([] if thinking else [THINKING_OFF])]
 
 
 def _redact(cmd: list[str]) -> str:
@@ -127,7 +133,8 @@ def _redact(cmd: list[str]) -> str:
 
 
 @contextlib.contextmanager
-def gym_servers(policy: Policy, log_path: Path | str | None = None, timeout_s: float = 1200) -> Iterator[Path]:
+def gym_servers(policy: Policy, log_path: Path | str | None = None, timeout_s: float = 1200,
+                thinking: bool = True) -> Iterator[Path]:
     """``gym env start`` for the RiskLens environment and the given policy; stopped when the block exits.
 
     The first start creates a venv per server, which can take a few minutes; later starts reuse them.
@@ -137,7 +144,7 @@ def gym_servers(policy: Policy, log_path: Path | str | None = None, timeout_s: f
         raise RuntimeError("NeMo Gym CLI not found. Install it with `pip install nemo-gym` (Python >= 3.13.14).")
     log_path = Path(log_path) if log_path else ROOT / "data" / "outputs" / "gym" / "servers.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    cmd = ["gym", "env", "start", *_model_args(policy)]
+    cmd = ["gym", "env", "start", *_model_args(policy, thinking)]
     print("$", _redact(cmd))
     mock = mock_policy_server(int(policy.url.rsplit(":", 1)[1].split("/")[0])) if policy.serve_mock else contextlib.nullcontext()
     with mock, log_path.open("w") as log:
@@ -190,11 +197,13 @@ def collect_rollouts(input_path: Path | str, output_path: Path | str, limit: int
 
 def run_gym_eval(policy: Policy | str, split: str = "example", output: Path | str | None = None,
                  limit: int | None = None, num_repeats: int = 1, concurrency: int | None = None,
-                 temperature: float | None = None, stream: bool = True, variant: str | None = None) -> Path:
+                 temperature: float | None = None, stream: bool = True, variant: str | None = None,
+                 thinking: bool = True) -> Path:
     """Start the Gym servers, collect rollouts for one split (example | train | validation | hint), stop the servers.
 
     ``variant`` runs a story variant (``scripts/build_story_variants.py`` must have built it): the servers
     read that variant's data through env vars and the rows come from its dataset folder.
+    ``thinking=False`` asks the policy to answer without reasoning (the format the LoRA adapter is trained on).
     """
     policy = POLICIES[policy] if isinstance(policy, str) else policy
     if variant:
@@ -210,7 +219,7 @@ def run_gym_eval(policy: Policy | str, split: str = "example", output: Path | st
     saved = {k: os.environ.get(k) for k in env}
     os.environ.update(env)          # inherited by the gym subprocesses via _clean_env()
     try:
-        with gym_servers(policy):
+        with gym_servers(policy, thinking=thinking):
             return collect_rollouts(paths[split].relative_to(ROOT), output, limit, num_repeats, concurrency,
                                     temperature, stream)
     finally:

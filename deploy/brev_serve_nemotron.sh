@@ -13,6 +13,11 @@
 # Checkpoints: NVFP4 (~4-bit, default; Blackwell native, Hopper/Ampere via W4A16 kernels)
 #              BF16 (~60 GB weights; one 80 GB A100/H100)
 # Untested on the event's Brev instance types; check `nvidia-smi` and adjust MAX_LEN / GPU_UTIL.
+#
+# LoRA adapter (scripts/finetune_lora.py output; base must be the BF16 checkpoint it was trained on):
+#   MODEL=nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16 LORA=~/risklens/data/outputs/lora/lightning-risklens \
+#     bash deploy/brev_serve_nemotron.sh
+# serves both the base model (MODEL) and the adapter as model "risklens-lora" from one server.
 set -euo pipefail
 MODEL="${MODEL:-nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4}"
 MAX_LEN="${MAX_LEN:-65536}"          # the model supports 1M tokens; 64k is plenty for RiskLens and saves KV cache
@@ -20,13 +25,21 @@ GPU_UTIL="${GPU_UTIL:-0.90}"
 PORT="${PORT:-8000}"
 IMAGE="${IMAGE:-vllm/vllm-openai:v0.27.1}"
 HF_TOKEN="${HF_TOKEN:-}"            # optional (see above)
+LORA="${LORA:-}"                    # optional PEFT adapter directory (see above)
+
+lora_mount=() lora_args=()
+if [[ -n "${LORA}" ]]; then
+  rank=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['r'])" "${LORA}/adapter_config.json")
+  lora_mount=(-v "$(cd "${LORA}" && pwd):/lora:ro")
+  lora_args=(--enable-lora --max-lora-rank "${rank}" --lora-modules risklens-lora=/lora)
+fi
 
 docker run --rm --gpus all --ipc=host -p "${PORT}:8000" \
-  -e HF_TOKEN="${HF_TOKEN}" -v "${HOME}/.cache/huggingface:/root/.cache/huggingface" \
+  -e HF_TOKEN="${HF_TOKEN}" -v "${HOME}/.cache/huggingface:/root/.cache/huggingface" ${lora_mount[@]+"${lora_mount[@]}"} \
   "${IMAGE}" \
   --model "${MODEL}" --served-model-name "${MODEL}" \
   --host 0.0.0.0 --port 8000 \
   --max-model-len "${MAX_LEN}" --gpu-memory-utilization "${GPU_UTIL}" \
   --enable-prefix-caching --max-num-seqs 64 \
   --enable-auto-tool-choice --tool-call-parser qwen3_coder \
-  --reasoning-parser nemotron_v3
+  --reasoning-parser nemotron_v3 ${lora_args[@]+"${lora_args[@]}"}

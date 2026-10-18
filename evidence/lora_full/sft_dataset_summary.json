@@ -1,0 +1,41 @@
+{
+  "min_reward": 0.95,
+  "max_per_task": 40,
+  "rollouts": 540,
+  "kept": 401,
+  "sources": [
+    "vllm_consumer_stress_hint_rollouts.jsonl",
+    "vllm_consumer_stress_train_rollouts.jsonl",
+    "vllm_credit_led_hint_rollouts.jsonl",
+    "vllm_credit_led_train_rollouts.jsonl",
+    "vllm_growth_led_hint_rollouts.jsonl",
+    "vllm_growth_led_train_rollouts.jsonl",
+    "vllm_hint_rollouts.jsonl",
+    "vllm_train_rollouts.jsonl",
+    "vllm_weights_shift_hint_rollouts.jsonl",
+    "vllm_weights_shift_train_rollouts.jsonl"
+  ],
+  "by_task": {
+    "q01_previous_allowance": 19,
+    "q02_current_allowance": 20,
+    "q03_dollar_change": 20,
+    "q03_dollar_change_p1": 20,
+    "q04_pct_change": 20,
+    "q05_drivers": 19,
+    "q05_drivers_p1": 20,
+    "q06_top_portfolio": 20,
+    "q06_top_portfolio_p1": 18,
+    "q07_top_borrowers": 9,
+    "q07_top_borrowers_p1": 3,
+    "q08_pd": 16,
+    "q09_lgd": 20,
+    "q10_exposure": 20,
+    "q11_macro_variable": 20,
+    "q11_macro_variable_p1": 20,
+    "q12_weights": 20,
+    "q13_model_change": 20,
+    "q14_cre": 40,
+    "q15_reconcile": 19,
+    "q15_reconcile_p1": 18
+  }
+}

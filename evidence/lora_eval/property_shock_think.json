@@ -1,0 +1,122 @@
+{
+  "variant": "property_shock",
+  "repeats": 4,
+  "thinking": true,
+  "models": {
+    "base": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+    "lora": "risklens-lora"
+  },
+  "mean_reward": {
+    "base": 0.9639,
+    "lora": 0.9593
+  },
+  "components": {
+    "base": {
+      "correctness": 0.9778,
+      "grounding": 0.9294,
+      "tool_selection": 0.9833,
+      "call_validity": 0.9194,
+      "efficiency": 1.0
+    },
+    "lora": {
+      "correctness": 0.9778,
+      "grounding": 0.9299,
+      "tool_selection": 0.9167,
+      "call_validity": 0.9389,
+      "efficiency": 1.0
+    }
+  },
+  "tool_errors": {
+    "base": 11,
+    "lora": 9
+  },
+  "tool_calls": {
+    "base": 97,
+    "lora": 92
+  },
+  "no_tool_answers": {
+    "base": 0,
+    "lora": 0
+  },
+  "output_tokens_per_episode": {
+    "base": 970.4,
+    "lora": 1041.7
+  },
+  "per_task": {
+    "q01_previous_allowance": {
+      "base": 0.993,
+      "lora": 0.9782,
+      "delta": -0.0149
+    },
+    "q02_current_allowance": {
+      "base": 1.0,
+      "lora": 0.998,
+      "delta": -0.002
+    },
+    "q03_dollar_change": {
+      "base": 0.9845,
+      "lora": 0.9825,
+      "delta": -0.002
+    },
+    "q04_pct_change": {
+      "base": 0.9962,
+      "lora": 0.9952,
+      "delta": -0.0009
+    },
+    "q05_drivers": {
+      "base": 0.9834,
+      "lora": 0.9831,
+      "delta": -0.0003
+    },
+    "q06_top_portfolio": {
+      "base": 0.9663,
+      "lora": 0.9838,
+      "delta": 0.0175
+    },
+    "q07_top_borrowers": {
+      "base": 0.8865,
+      "lora": 0.9712,
+      "delta": 0.0847
+    },
+    "q08_pd": {
+      "base": 0.97,
+      "lora": 0.975,
+      "delta": 0.005
+    },
+    "q09_lgd": {
+      "base": 0.973,
+      "lora": 0.9701,
+      "delta": -0.0029
+    },
+    "q10_exposure": {
+      "base": 0.9678,
+      "lora": 0.9605,
+      "delta": -0.0073
+    },
+    "q11_macro_variable": {
+      "base": 0.9551,
+      "lora": 0.8686,
+      "delta": -0.0865
+    },
+    "q12_weights": {
+      "base": 1.0,
+      "lora": 1.0,
+      "delta": 0.0
+    },
+    "q13_model_change": {
+      "base": 0.9978,
+      "lora": 0.9833,
+      "delta": -0.0145
+    },
+    "q14_cre": {
+      "base": 0.7923,
+      "lora": 0.7498,
+      "delta": -0.0425
+    },
+    "q15_reconcile": {
+      "base": 0.9932,
+      "lora": 0.9905,
+      "delta": -0.0027
+    }
+  }
+}
