@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
-from demo_app import runlog  # noqa: E402
+from demo_app import runlog, scenarios  # noqa: E402
 from demo_app.pack import build_pack  # noqa: E402
 from demo_app.warmup import Warmer  # noqa: E402
 from src.llm.provider import get_provider  # noqa: E402
@@ -122,6 +122,12 @@ def warmup(req: WarmupRequest) -> dict[str, Any]:
 @app.get("/api/warmup")
 def warmup_status() -> dict[str, Any]:
     return warmer.status()
+
+
+@app.get("/api/scenarios")
+def scenario_scoreboard() -> dict[str, Any]:
+    """Every evaluated configuration side by side, from the committed result files (demo_app/scenarios.py)."""
+    return scenarios.scoreboard()
 
 
 @app.get("/api/runs")
