@@ -21,9 +21,11 @@ Due **Sunday, October 18, 11:00 AM ET**, one submission per team, via the Airtab
 | Live Nemotron numbers (agent eval + Gym reward) | _run on Brev, add to README_ |
 | Pre-event code import | _confirm with organizers in Discord that the labelled import is acceptable_ |
 
-## Project description (draft, ~130 words)
+## Project description (final, ~140 words)
 
-> RiskLens AI explains why a bank's CECL credit-loss allowance changed. A team of agents, all running on one small open model (NVIDIA Nemotron 3.5 Lightning, 30B total / ~3B active, served with Red Hat vLLM on NVIDIA Brev), investigates the movement: an orchestrator delegates to Portfolio, Credit, Macro, Model Risk, Reconciliation, Quant and Reporting specialists, each limited to its own deterministic risk tools. The models never compute a number. Tools repair malformed arguments and return recovery hints, every figure in the final answer is checked against tool results, and an exact counterfactual attribution reconciles the explanation to the booked allowance to the cent. A NeMo Gym environment exposes the same tools and scores investigations against the hidden ground truth of a published synthetic 50,000-loan bank book.
+> RiskLens AI explains why a bank's CECL / IFRS 9 credit-loss allowance changed. An orchestrator delegates to Portfolio, Credit, Macro, Model Risk, Reconciliation, Quant, Reporting and Regulatory specialists, all on one small NVIDIA Nemotron base, each limited to its own deterministic risk tools. The models never compute a number: every figure is checked against tool results, and an exact counterfactual attribution reconciles the explanation to the booked allowance. A NeMo Gym environment exposes the 33 tools and scores answers against the hidden ground truth of a published synthetic 50,000-loan bank. On 15 questions, Nemotron 3.5 Lightning (3B active, Red Hat vLLM on Brev) reaches 98% of a frontier model's score, and a 4B agent team on a 16 GB laptop reaches 89%. A LoRA trained on Nemotron's best Gym rollouts lifts reasoning-off quality on an unseen story from 0.751 to 0.939.
+
+Sources for each figure: `demo_app/baselines/2026-10-17_bank15/` (15-question comparison: frontier 0.997, Lightning 0.977, laptop 4B 0.898 single / 0.892 team) and `evidence/lora_eval/` (base vs LoRA on the held-out `property_shock` story).
 
 ## Demo video script (3–5 min)
 
