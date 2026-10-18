@@ -41,6 +41,12 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 13 s, tools: get_allowance_summary</summary>
+
+> The CECL allowance for July 31, 2026 was **$99.06M**【a2334c8cb3dc】.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: get_allowance_summary</summary>
 
 > **One‑sentence answer**  
@@ -112,6 +118,21 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 18 s, tools: get_allowance_summary</summary>
+
+> **The CECL allowance at the end of August 2026 was $118,295,195.32.**
+> 
+> **Facts**
+> - Total allowance for 2026-08-31 (CECL): $118,295,195.32 [get_allowance_summary]
+> 
+> **Interpretation**
+> - The allowance is the sum of the modeled ECL ($116,395,195.32) plus the management overlay total ($1,900,000.00), reflecting the overall credit risk exposure for the reporting date.
+> 
+> **Next steps**
+> - Portfolio-level analysis shows Consumer and Credit Card portfolios drove the highest allowance, with Consumer at $2,308,170.91 and Credit Card at $10,118,449.29.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 0.99, time n/a, tools: get_allowance_summary</summary>
 
 > <one-sentence direct answer>  
@@ -175,6 +196,18 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 17 s, tools: compare_allowance</summary>
+
+> **The allowance increased by $19.24M**  
+> **Facts**  
+> - `compare_allowance` shows previous allowance $99.06M, current allowance $118.30M, change $19.24M.  
+> **Interpretation**  
+> - The allowance rose from $99.057M to $118.295M, a $19.238M increase.  
+> **Next steps**  
+> - Investigate the top drivers: CRE portfolio change ($13.89M) and macro/credit deterioration.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: compare_allowance</summary>
 
 > **Answer:** The allowance for credit losses increased by **$19.24 M** from July 31 2026 to August 31 2026.
@@ -230,6 +263,24 @@ For each question: the frontier reference answer, then each configuration's answ
 > This increase reflects higher credit losses due to portfolio dynamics and macro factors.  
 > **Next steps**  
 > No further action needed for this question.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 20 s, tools: compare_allowance</summary>
+
+> **The allowance increased by 19.42% between 2026-07-31 and 2026-08-31.**
+> 
+> **Facts**
+> - previous allowance: $99.057M [get_allowance_summary]
+> - current allowance: $118.295M [get_allowance_summary]
+> - change_pct: 19.421129% [compare_allowance]
+> 
+> **Interpretation**
+> The total allowance increased from $99.057M to $118.295M, a 19.42% increase, driven primarily by portfolio-specific credit quality changes (CRE up 32.83%, Auto up 21.59%, etc.).
+> 
+> **Next steps**
+> - Investigate the CRE portfolio's higher allowance increase (72.21% of total change).
+> - Check if macro or model shifts contributed to the overall increase.
 
 </details>
 
@@ -306,6 +357,20 @@ For each question: the frontier reference answer, then each configuration's answ
 > 
 > **Interpretation**  
 > The allowance increase is explained by macroeconomic scenarios and credit deterioration.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.86, 21 s, tools: calculate_portfolio_attribution</summary>
+
+> **Facts**
+> - Total allowance increased from $99.06M (2026-07-31) to $118.30M (2026-08-31) (change $19.24M, +19.42%) [calculate_portfolio_attribution]
+> 
+> **Interpretation**
+> - The primary driver is **macroeconomic scenario changes** (53.74% of the increase), followed by **credit deterioration** (38.89%), with **portfolio growth** adding 11.40% and **model methodology** adding 9.79%.
+> - Paydowns/runoff slightly reduced allowance by 13.83%.
+> 
+> **Next steps**
+> - Investigate the specific macro scenario shifts (unemployment rate, GDP growth, etc.) driving the increase.
 
 </details>
 
@@ -395,6 +460,22 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.35, 21 s, tools: calculate_portfolio_attribution</summary>
+
+> **Facts**  
+> - The allowance increased from $99.057M to $118.30M, a $19.24M rise.  
+> - The primary driver was **macroeconomic**, contributing $10.34M (53.7% of the total change).  
+> - Credit deterioration contributed $7.48M (38.9%).  
+> - Portfolio growth contributed $2.19M (11.4%).  
+> 
+> **Interpretation**  
+> Macroeconomic factors were the main driver of the allowance increase.  
+> 
+> **Next steps**  
+> - Investigate which macro variables (e.g., unemployment, GDP, interest rates) moved most and by how much.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: calculate_segment_attribution</summary>
 
 > **Direct answer:** The Commercial Real Estate (CRE) portfolio accounted for the lion’s share of the allowance increase, contributing **$13.89 M (≈ 72 % of the total $19.24 M change)** between 2026‑07‑31 and 2026‑08‑31 (CECL).
@@ -463,6 +544,18 @@ For each question: the frontier reference answer, then each configuration's answ
 > **Interpretation** The allowance increase is driven by credit deterioration across CRE loans, with Silverline being the largest single contributor; further investigation of this borrower is recommended.  
 > 
 > Next steps: Investigate Silverline Industries Co. for detailed credit deterioration drivers.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 33 s, tools: identify_top_contributors</summary>
+
+> **Top borrowers driving the increase**  
+> - **Silverline Industries Co.** (CRE, CP_040408) led with a $1.20M ECL jump, driven by a BBB‑to‑BB downgrade, DSCR drop and LTV rise.  
+> - **Pinecrest Ventures Inc.** (CRE, CP_040469) second with $1.04M, also due to downgrades, DSCR fall and LTV increase.  
+> - **Summit Enterprises Co.** (C&I, CP_038825) third with $0.93M, driven by DSCR deterioration and defaulting loans.  
+> 
+> **Who to investigate first**  
+> Prioritise Silverline Industries Co., followed by Pinecrest Ventures Inc. and Summit Enterprises Co., as their credit‑quality deterioration explains the bulk of the allowance increase.
 
 </details>
 
@@ -545,6 +638,21 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.90, 25 s, tools: calculate_pd_migration</summary>
+
+> **Facts**
+> - 12-month PD for continuing loans increased from 12.33% (July 31) to 16.07% (August 31), a 37.36 bps change.  
+> - Base PD (scorecard only) increased only 4.08 bps.  
+> - The macro effect explains the majority of the 12-month PD increase.  
+> 
+> **Interpretation**
+> - The probability of default increased between July and August. The increase is primarily driven by macroeconomic factors, not changes in borrower attributes.  
+> 
+> **Next steps**
+> - Investigate macro scenario weight changes or macro attribution.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: calculate_pd_migration</summary>
 
 > **Direct answer:** Yes – the 12‑month probability of default rose from **1.233 % to 1.607 %** (≈ 37 bps) between 31 July and 31 August 2026.
@@ -608,6 +716,18 @@ For each question: the frontier reference answer, then each configuration's answ
 > - Credit deterioration driver share 38.89% [calculate_portfolio_attribution]  
 > - Primary driver macroeconomic impact 53.74% [calculate_portfolio_attribution]  
 > **Interpretation** LGD increase is small (0.741796 pp) and not the main driver; macroeconomic factors dominate the allowance change.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.97, 48 s, tools: get_allowance_summary, get_allowance_summary, calculate_lgd_migration</summary>
+
+> **The allowance increased from $99.06M to $118.30M.**  
+> **Facts**  
+> - LGD increased from 0.331737 (July 31) to 0.339155 (August 31) – a 0.741796% increase in the weighted average LGD. [calculate_lgd_migration]  
+> **Interpretation**  
+> - The increase in LGD (0.331737 → 0.339155) was the primary driver of the allowance increase, with the change accounting for the full $19.24M rise.  
+> **Next steps**  
+> - Investigate if the LGD increase is due to collateral re‑appraisals (credit) or macro‑driven HPI/CRE price paths, as noted in the migration report.
 
 </details>
 
@@ -693,6 +813,23 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.86, 27 s, tools: calculate_ead_change</summary>
+
+> **Answer**: Total exposure at default grew by $16.53M (0.2025%) from $8.1607B to $8.1772B. New business originated was $1.792M in the Mortgage portfolio.  
+> 
+> **Facts**  
+> - Total EAD change: $16.53M (0.2025%) [calculate_ead_change]  
+> - New originations: $1.792M [calculate_new_originations]  
+> 
+> **Interpretation**  
+> Total EAD increased due to growth, primarily from the Mortgage portfolio. New originations were small and limited to Mortgage.  
+> 
+> **Next steps**  
+> - Investigate Mortgage EAD dip (-0.0301%) [calculate_segment_attribution]  
+> - Review allowance reconciliation for residual unexplained changes [reconcile_allowance_change]
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: calculate_ead_change, calculate_new_originations</summary>
 
 > <one‑sentence direct answer>Exposure grew modestly by $16.5 M (0.20 % increase) while the bank originated $139.4 M of new loans in the month.  
@@ -764,6 +901,22 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 16 s, tools: calculate_variable_attribution</summary>
+
+> The largest macroeconomic variable impact on the allowance is the **unemployment rate**, with a $4.41M increase and 42.65% share of the total macro impact.  
+> 
+> **Facts**  
+> - macro total: $10.34M [calculate_variable_attribution]  
+> - unemployment_rate impact: $4.41M [calculate_variable_attribution]  
+> 
+> **Interpretation**  
+> Unemployment rate drove the allowance increase; its impact aligns with the sequential calculation.  
+> 
+> **Next steps**  
+> No further action needed; the attribution is complete.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: calculate_variable_attribution</summary>
 
 > **Direct answer:** The unemployment rate was the single macroeconomic variable with the largest impact on the allowance change, contributing $4.41 M (≈ 42.7 % of the total macro‑driven allowance movement) between 2026‑07‑31 and 2026‑08‑31 (CECL framework).
@@ -831,6 +984,22 @@ For each question: the frontier reference answer, then each configuration's answ
 > - allowance_impact_of_weight_change: $1.884124146852M [compare_scenario_weights]  
 > **Interpretation**: The allowance impact increased.  
 > **Next steps**: None required for this question.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 12 s, tools: compare_scenario_weights</summary>
+
+> **Facts**  
+> - Scenario weights changed between 2026‑07‑31 and 2026‑08‑31.  
+> - Weight shifted toward the **severe_adverse** scenario.  
+> - Unweighted ECL increased from $82.74 M to $94.92 M.  
+> - Allowance impact of the weight change was $1.88 M.  
+> 
+> **Interpretation**  
+> The allowance change is partly driven by the re‑allocation of scenario weights toward the severe_adverse scenario, with a 2 pp increase in its weight.  
+> 
+> **Next steps**  
+> Examine the macro scenario paths and the allowance impact of the weight change using the attribution walk.
 
 </details>
 
@@ -907,6 +1076,17 @@ For each question: the frontier reference answer, then each configuration's answ
 
 </details>
 
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 21 s, tools: compare_model_versions</summary>
+
+> **Facts**  
+> - No model version changes occurred between 2026‑07‑31 and 2026‑08‑31. All PD, LGD, and EAD models remained the same. The allowance impact attributed to models is 0.0%.  
+> **Interpretation**  
+> - The allowance change is not due to model version updates.  
+> **Next steps**  
+> - Investigate macroeconomic drivers or portfolio composition shifts using `calculate_portfolio_attribution` or `calculate_macro_attribution`.
+
+</details>
+
 <details><summary><b>nemotron-3.5-lightning 30B BF16 base | vLLM A100 80GB (Brev) | single-agent | NeMo Gym</b>: quality 1.00, time n/a, tools: compare_model_versions</summary>
 
 > **Direct answer:** No – the model‑version comparison shows that every PD, LGD and EAD model remained unchanged between 2026‑07‑31 and 2026‑08‑31, and the allowance impact of any model change is $0.00M.
@@ -972,6 +1152,22 @@ For each question: the frontier reference answer, then each configuration's answ
 > **Facts** - CRE allowance change: $13.89M [compare_allowance], CRE EAD change: -$0.86M [calculate_ead_change], CRE paydowns/outflow: $1.38M [calculate_segment_attribution], largest driver: Macroeconomic $5.69M [calculate_segment_attribution].  
 > **Interpretation** The increase is due to macroeconomic scenario shifts, with EAD decreasing slightly, paydowns/outflow causing net outflow, and new originations partially offsetting credit deterioration.  
 > **Next steps** - The reconciliation is PASS and the primary driver is robust to attribution order.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 0.82, 19 s, tools: calculate_segment_attribution</summary>
+
+> **Facts**  
+> - Total allowance change: $19.238M [calculate_segment_attribution]  
+> - CRE segment change: $13.891M (72.21% of total) [calculate_segment_attribution]  
+> - CRE drivers: macroeconomic $5.691M, credit_deterioration $5.131M, portfolio_growth $0.529M, model_methodology $1.157M, paydowns_runoff $1.384M [calculate_segment_attribution]  
+> - Largest driver: macroeconomic [calculate_segment_attribution]  
+> 
+> **Interpretation**  
+> CRE allowance increased by $13.891M due primarily to macroeconomic factors, with significant credit deterioration and portfolio growth contributions.  
+> 
+> **Next steps**  
+> - Review macroeconomic scenario factors affecting CRE (e.g., unem. rate, interest rate).
 
 </details>
 
@@ -1060,6 +1256,23 @@ For each question: the frontier reference answer, then each configuration's answ
 > - Status: PASS [reconcile_allowance_change]  
 > **Interpretation**  
 > The reconciliation is PASS with 100% of the allowance change explained and no residual.
+
+</details>
+
+<details><summary><b>nemotron-3-nano 4B 4-bit | MLX | single-agent | M4 16GB</b>: quality 1.00, 23 s, tools: reconcile_allowance_change</summary>
+
+> **Does the attribution reconcile to the total allowance change?**  
+> Yes. The reconciliation confirms a 100% match: reported change $19.24M equals explained change $19.24M, with a residual of $0.00 and a pct explained of 100.0%.
+> 
+> **Facts**  
+> - reported_change: $19.24M [get_allowance_summary]  
+> - explained_change: $19.24M [reconcile_allowance_change]
+> 
+> **Interpretation**  
+> The attribution steps (runoff, balance, originations, credit migration, macro, scenario weights, model change, overlay) fully account for the total allowance increase, with no residual. The primary driver is macroeconomic scenario changes.
+> 
+> **Next steps**  
+> No further investigation needed; the attribution is complete and robust.
 
 </details>
 
