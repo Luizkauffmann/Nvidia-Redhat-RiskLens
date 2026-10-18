@@ -8,7 +8,8 @@ What the static site contains:
 * the attribution pack (same JSON as `GET /api/pack`) for every reporting-date pair and framework,
 * the Excel pack for each (same file as `GET /api/export.xlsx`),
 * recorded agent runs for the demo questions (same JSON as `POST /api/ask`, mock planner, team and single agent),
-* the committed model-run baselines (`demo_app/baselines/*/runs.jsonl`, same JSON as `GET /api/runs`).
+* the committed model-run baselines (`demo_app/baselines/*/runs.jsonl`, same JSON as `GET /api/runs`),
+* the scenario scoreboard: every evaluated configuration side by side (same JSON as `GET /api/scenarios`).
 
 The page runs `demo_app/static/app.js` in snapshot mode: it reads these files instead of calling the server.
 It cannot answer new questions; that needs the live server (`python -m demo_app.server`).
@@ -23,7 +24,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from demo_app import runlog, server
+from demo_app import runlog, scenarios, server
 from demo_app.pack import build_pack
 from src.tools import call_tool
 
@@ -73,6 +74,7 @@ def export(out: Path, frameworks: list[str] | None = None) -> dict:
     baseline_runs = [json.loads(line) for f in sorted((ROOT / "demo_app" / "baselines").glob("*/runs.jsonl"))
                      for line in f.read_text().splitlines() if line.strip()]
     (data / "runs.json").write_text(json.dumps({"summary": runlog.summary(baseline_runs), "runs": baseline_runs[::-1]}))
+    (data / "scenarios.json").write_text(json.dumps(scenarios.scoreboard()))
 
     manifest = {**ctx, "demo_questions": server.DEMO_QUESTIONS, "packs": packs,
                 "llm": {"provider": "snapshot", "model": "mock planner (recorded)"},

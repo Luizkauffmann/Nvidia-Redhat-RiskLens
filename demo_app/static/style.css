@@ -105,3 +105,17 @@ textarea { resize: vertical; width: 100%; }
 .warm.ready { color: var(--neg); }
 .warm.warming { color: var(--warn); }
 .warm.error { color: var(--pos); }
+
+/* Scenario scoreboard: quality cells carry a 0-1 bar behind the value; bands mark fully right / partly right / weak */
+table.scoreboard th { white-space: nowrap; }
+td.qcell { position: relative; min-width: 76px; }
+td.qcell .qbar { position: absolute; left: 0; top: 4px; height: 18px; border-radius: 2px; opacity: .22;
+  background: var(--accent); }
+td.qcell.full .qbar { background: var(--neg); }
+td.qcell.low .qbar { background: var(--pos); }
+td.qcell .qval { position: relative; }
+td.qcell.low .qval { color: var(--pos); font-weight: 600; }
+h4 { margin: 18px 0 6px; }
+
+/* wide scoreboards scroll inside their own box instead of widening the page */
+.sheet-area, .sheet { min-width: 0; }

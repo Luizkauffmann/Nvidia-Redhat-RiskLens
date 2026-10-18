@@ -90,15 +90,16 @@ function waterfall(chart) {
 }
 
 const RUNS_TAB = "Model runs";
+const SCEN_TAB = "Scenarios";      // every evaluated model configuration side by side
 
 function renderTabs() {
   const tabs = $("tabs");
   tabs.innerHTML = "";
-  [...state.pack.sheets.map((s) => s.name), RUNS_TAB].forEach((name) => {
+  [...state.pack.sheets.map((s) => s.name), SCEN_TAB, RUNS_TAB].forEach((name) => {
     const b = document.createElement("button");
     b.type = "button"; b.role = "tab"; b.textContent = name;
     b.setAttribute("aria-selected", String(name === state.tab));
-    b.addEventListener("click", () => { state.tab = name; renderTabs(); name === RUNS_TAB ? renderRuns() : renderSheet(); });
+    b.addEventListener("click", () => { state.tab = name; renderTabs(); renderCurrent(); });
     tabs.appendChild(b);
   });
 }
@@ -121,6 +122,108 @@ function simpleTable(columns, rows) {
   });
   wrap.appendChild(tb);
   return wrap;
+}
+
+function renderCurrent() {
+  document.querySelector(".legend").hidden = state.tab === RUNS_TAB || state.tab === SCEN_TAB;   // colour key is for pack sheets
+  if (state.tab === RUNS_TAB) return renderRuns();
+  if (state.tab === SCEN_TAB) return renderScenarios();
+  return renderSheet();
+}
+
+// ---------------------------------------------------------------- scenario scoreboard
+const pctText = (v) => (v === null || v === undefined ? "–" : v.toFixed(3));
+
+function qualityCell(td, v) {
+  // value plus a bar scaled 0-1; colour bands mark fully right / partly right / weak
+  td.className = "num qcell";
+  if (v === null || v === undefined) { td.textContent = "–"; return; }
+  const band = v >= 0.999 ? "full" : v >= 0.8 ? "mid" : "low";
+  td.classList.add(band);
+  const bar = document.createElement("span"); bar.className = "qbar"; bar.style.width = `${Math.round(v * 100)}%`;
+  const txt = document.createElement("span"); txt.className = "qval"; txt.textContent = pctText(v);
+  td.append(bar, txt);
+}
+
+function scoreTable(columns, rows) {
+  // columns: [label, getter, kind] where kind is "q" (quality bar), "num" or text
+  const wrap = document.createElement("div"); wrap.className = "grid";
+  const tb = document.createElement("table"); tb.className = "scoreboard";
+  const head = tb.createTHead().insertRow();
+  columns.forEach(([label]) => { const th = document.createElement("th"); th.textContent = label; head.appendChild(th); });
+  const body = tb.createTBody();
+  rows.forEach((r) => {
+    const tr = body.insertRow();
+    columns.forEach(([, get, kind]) => {
+      const td = tr.insertCell(); const v = get(r);
+      if (kind === "q") qualityCell(td, v);
+      else { td.textContent = v === null || v === undefined ? "–" : String(v); if (kind === "num") td.className = "num"; }
+    });
+  });
+  wrap.appendChild(tb);
+  return wrap;
+}
+
+function fullNames(tableWrap, rows) {
+  // per-question tables use short column names; the full configuration name shows on hover
+  tableWrap.querySelectorAll("thead th").forEach((th, i) => { if (i > 0) th.title = rows[i - 1].label; });
+}
+
+function section(el, title, text) {
+  const h = document.createElement("h4"); h.textContent = title; el.appendChild(h);
+  if (text) { const p = document.createElement("p"); p.className = "muted"; p.textContent = text; el.appendChild(p); }
+}
+
+async function renderScenarios() {
+  const el = $("sheet");
+  el.innerHTML = '<p class="empty">Loading scenarios…</p>';
+  let data;
+  try {
+    const r = await fetch(STATIC ? "data/scenarios.json" : "api/scenarios");
+    if (!r.ok) throw new Error(r.statusText);
+    data = await r.json();
+  } catch (e) { el.innerHTML = ""; const p = document.createElement("p"); p.className = "error"; p.textContent = `Could not load the scoreboard: ${e.message}`; el.appendChild(p); return; }
+  el.innerHTML = "";
+  const h = document.createElement("h3"); h.textContent = "Scenario comparison: every model configuration we evaluated"; el.appendChild(h);
+  const note = document.createElement("p"); note.className = "muted"; note.textContent = data.note; el.appendChild(note);
+
+  const base = data.base;
+  section(el, "Base story: 15 evaluation-bank questions",
+    "Same questions, tools, prompts and verifier for every row. Time is per question where it was measured (the frontier reference was hand-driven; NeMo Gym does not record wall time).");
+  el.appendChild(scoreTable([
+    ["Configuration", (r) => r.label], ["Agents", (r) => r.agents], ["Mean quality", (r) => r.mean_quality, "q"],
+    ["Fully right", (r) => `${r.fully_right} / ${r.answered}`, "num"],
+    ["Median s / question", (r) => r.median_s, "num"], ["Source", (r) => r.source],
+  ], base.rows));
+  section(el, "Base story by question", "Quality per question; hover a question ID for its text.");
+  const qcols = [["Question", (q) => q.task_id]].concat(base.rows.map((r) => [r.short || r.label,
+    (q) => (r.per_question[q.task_id] || {}).quality, "q"]));
+  const qtable = scoreTable(qcols, base.questions);
+  qtable.querySelectorAll("tbody tr").forEach((tr, i) => { tr.cells[0].title = base.questions[i].question; });
+  fullNames(qtable, base.rows);
+  el.appendChild(qtable);
+
+  const ho = data.heldout;
+  if (ho.rows.length) {
+    section(el, `Held-out story (${ho.story}): base vs LoRA vs local 4B`,
+      "This story was never in training and has different correct answers, so compare these rows with each other, not with the base story. Thinking off is the fast mode the LoRA was trained for.");
+    el.appendChild(scoreTable([
+      ["Configuration", (r) => r.label], ["Thinking", (r) => r.thinking], ["Mean quality", (r) => r.mean_quality, "q"],
+      ["Answers with no tool call", (r) => `${r.no_tool_answers} / ${r.answers}`, "num"],
+      ["Output tokens / answer", (r) => r.output_tokens.toLocaleString("en-US"), "num"],
+      ["Attempts / question", (r) => r.attempts_per_question, "num"],
+    ], ho.rows));
+    section(el, "Held-out story by question", "Mean quality per question across attempts.");
+    const htable = scoreTable([["Question", (q) => q.task_id]].concat(ho.rows.map((r) => [r.short || r.label, (q) => r.per_question[q.task_id], "q"])),
+      ho.questions);
+    fullNames(htable, ho.rows);
+    el.appendChild(htable);
+    if (ho.adapter) {
+      const p = document.createElement("p"); p.className = "muted"; p.append("LoRA adapter: ");
+      const a = document.createElement("a"); a.href = ho.adapter; a.textContent = ho.adapter.replace("https://", "");
+      a.rel = "noopener"; a.target = "_blank"; p.appendChild(a); el.appendChild(p);
+    }
+  }
 }
 
 async function renderRuns() {
@@ -192,7 +295,7 @@ async function loadPack(ev) {
       throw new Error((await r.json()).detail || r.statusText);
     }
     state.pack = await r.json();
-    renderHeadline(); renderTabs(); renderSheet();
+    renderHeadline(); renderTabs(); renderCurrent();
   } catch (e) {
     $("sheet").innerHTML = `<p class="error">Could not build the pack: ${esc(e.message)}</p>`;
   } finally { $("load").disabled = false; }
@@ -310,6 +413,7 @@ async function init() {
     $("ollamarow").hidden = ["mock", "nvidia"].includes($("backend").value);
     warmUp();
   }
+  if (location.hash.toLowerCase() === "#scenarios") state.tab = SCEN_TAB;   // direct link to the comparison
   $("pick").addEventListener("submit", loadPack);
   $("askbtn").addEventListener("click", ask);
   loadPack();
