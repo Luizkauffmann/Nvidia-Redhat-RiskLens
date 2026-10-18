@@ -116,6 +116,8 @@ def test_static_export_replays_the_server(tmp_path):
     assert answers["team"][m["demo_questions"][0]]["grounding"]["status"] == "PASS"
     runs = json.loads((data / "runs.json").read_text())             # committed baselines for the Model runs tab
     assert set(runs) == {"summary", "runs"}
+    board = json.loads((data / "scenarios.json").read_text())       # Scenarios tab
+    assert board["base"]["rows"] and board["heldout"]["rows"]
 
 
 def test_runs_are_logged_with_timing_and_quality(ground_truth, monkeypatch):
@@ -177,3 +179,24 @@ def test_team_runs_credit_the_specialists_tools(ground_truth, monkeypatch):
     assert any(t.startswith("ask_") for t in run.tools_used)                      # it really delegated
     assert rec["scored_with_specialists"] and rec["quality"]["components"]["tool_selection"] == 1.0
     assert rec["quality"]["missing_tool_groups"] == []
+
+
+def test_scenario_scoreboard_matches_the_committed_results():
+    """The Scenarios tab reads committed result files only; its numbers must equal the published comparison."""
+    from demo_app.scenarios import scoreboard
+
+    board = scoreboard()
+    base = {r["label"].split(" | ")[0] + " | " + r["agents"]: r for r in board["base"]["rows"]}
+    assert base["Frontier reference (Claude, hand-driven) | single"]["mean_quality"] == 0.997
+    assert base["nemotron-3-nano 4B 32k | single"]["mean_quality"] == 0.898
+    assert base["nemotron-3-nano 4B 32k | team"]["mean_quality"] == 0.892       # credited with the specialists' tools
+    assert base["Nemotron 3.5 Lightning 30B base | single"]["mean_quality"] == 0.977
+    assert all(r["answered"] == 15 and len(r["per_question"]) == 15 for r in board["base"]["rows"])
+    held = {r["label"]: r for r in board["heldout"]["rows"]}
+    assert board["heldout"]["story"] == "property_shock"
+    assert held["Lightning 30B base, thinking off"]["mean_quality"] == 0.751
+    assert held["Lightning 30B + LoRA, thinking off"]["mean_quality"] == 0.939
+    assert held["Lightning 30B + LoRA, thinking off"]["no_tool_answers"] == 0
+    assert held["Local 4B stock (Ollama, M4 16 GB), thinking off"]["mean_quality"] == 0.429
+    assert len(held) == 5
+    assert TestClient(app).get("/api/scenarios").json() == json.loads(json.dumps(board))
