@@ -8,6 +8,8 @@ Results we cite in the submission, committed with how they were produced. Large 
 | [`nemotron_baseline/`](nemotron_baseline/README.md) | Base Nemotron 3.5 Lightning in the RiskLens NeMo Gym environment: **0.977** mean reward on the 15 demo questions (mock planner 0.988) | `run_gym_eval("vllm", split="example")` on an A100 |
 | [`nemotron_variants/`](nemotron_variants/README.md) | Base Nemotron on the held-out `property_shock` story: **0.959** (base story 0.977). Also documents a verifier fix (Unicode spacing in answers) this run exposed | `run_gym_eval("vllm", split="example", variant="property_shock")` |
 | [`lora_smoke/`](lora_smoke/README.md) | LoRA SFT of the 30B model fits one A100 80 GB: peak 68.7 GiB, ~6.3 s per example | `python -m scripts.finetune_lora --smoke` |
+| [`lora_full/`](lora_full/README.md) | Full LoRA SFT run: 401 rows from Nemotron's own passing rollouts (+ hint distillation), 102 steps, 67 min, peak 73.5 GiB | `python -m scripts.build_sft_dataset --max-per-task 40`, `python -m scripts.finetune_lora ... --max-len 20480` |
+| [`lora_eval/`](lora_eval/README.md) | Held-out story, thinking off: base **0.751** → LoRA **0.939**; base answered 14/60 without a tool, LoRA 0/60. CRE drill-down did not transfer | `python -m scripts.eval_adapter` |
 | [`story_variants/`](story_variants/summary.md) | Five extra July → August stories with different correct answers; 14/14 design claims hold in the engine's attribution; mock planner scores 0.988 on every variant through Gym, same as the base story (`mock_baseline.json`) | `python -m scripts.build_story_variants`, then `run_gym_eval("mock", split="example", variant=...)` |
 
 Every figure in these files comes from the deterministic CECL engine or the Gym verifier, never from a model.
