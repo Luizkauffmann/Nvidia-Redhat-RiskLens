@@ -127,7 +127,29 @@ gym eval run --no-serve --agent risklens_cecl_simple_agent \
 # Nemotron: same commands with --model nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4 --model-url http://localhost:8000/v1
 ```
 
-Mock planner baseline through real Gym servers: mean reward **0.965** on the 21 train rows (it fails paraphrases it has no keyword for). That is the floor Nemotron has to beat.
+Mock planner baseline through real Gym servers: mean reward **0.965** on the 21 train rows (it fails paraphrases it has no keyword for). Base Nemotron 3.5 Lightning (BF16, vLLM on one A100) scores **0.977** on the 15 demo questions ([evidence](evidence/nemotron_baseline/README.md)).
+
+**Story variants** (`config/story_variants/`, `python -m scripts.build_story_variants`): five more July → August stories with different correct answers (credit-led, growth-led, property shock, weights shift, consumer stress), so a policy cannot score by reciting the base story. Each story's intended outcome is checked against the engine's attribution at build time. `property_shock` is held out of all training data. [Evidence](evidence/story_variants/summary.md).
+
+## Fine-tuning: LoRA on Nemotron 3.5 Lightning
+
+We fine-tuned Nemotron 3.5 Lightning (30B total, 3B active, BF16) with LoRA on one A100 80 GB, on its own best investigations collected through the NeMo Gym environment:
+
+1. Nemotron answers the train questions on the base story and four training variants through Gym (540 rollouts, including 120 hint-distilled rollouts for the CRE drill-down it never did on its own).
+2. `python -m scripts.build_sft_dataset --max-per-task 40`: re-score with the verifier, keep reward ≥ 0.95, cap per question → 401 rows.
+3. `python -m scripts.finetune_lora --data data/outputs/sft/vllm_sft.jsonl --epochs 2 --max-len 20480`: 102 steps, 67 min, peak 73.5 GiB ([run](evidence/lora_full/README.md)).
+4. Serve base + adapter from one vLLM (`LORA=... bash deploy/brev_serve_nemotron.sh`) and compare in Gym on the held-out story: `python -m scripts.eval_adapter [--thinking]`.
+
+Held-out `property_shock`, 15 questions × 4 attempts ([evidence](evidence/lora_eval/README.md)):
+
+| | Mean reward | Answers with no tool call | Output tokens / episode |
+|---|---:|---:|---:|
+| base, thinking on | 0.964 | 0 / 60 | 970 |
+| LoRA, thinking on | 0.959 | 0 / 60 | 1,042 |
+| base, thinking off | 0.751 | 14 / 60 | 418 |
+| **LoRA, thinking off** | **0.939** | **0 / 60** | **567** |
+
+The adapter makes the no-reasoning mode nearly as accurate as the reasoning mode with about 40% fewer output tokens; without it, that mode invents figures instead of calling tools. It does not improve the reasoning mode, and the hint-distilled CRE drill-down did not transfer to the held-out story.
 
 ## Ask the agent (Phase 3)
 
@@ -264,10 +286,10 @@ Injected story: worse macro forecasts (unemployment up most, CRE prices down), 2
 
 ## Known limitations
 
-- **Live Nemotron results are pending.** Agents, team and Gym environment are tested with the mock planner and scripted fake models; scores from Nemotron on Brev still need to be run and added here.
+- **Live Nemotron results cover the single orchestrator in NeMo Gym** (base, story variants, LoRA). The Phase 4 agent team has been tested with the mock planner and scripted fake models only.
 - **Pre-event code.** The engine, data generator, tools and single agent were written before the event and imported in one labelled commit (see Provenance above). Everything after that commit (NeMo Gym environment, notebooks, agent team, sandbox, Excel pack, published data) was built at the hackathon.
 - **No web UI.** Interaction is through notebooks and the command line.
-- **No model training yet.** The Gym environment and SFT export exist; LoRA/RL runs on Nemotron Lightning were not done (full RL needs far more GPUs than hackathon credits).
+- **LoRA SFT only, no RL.** The adapter helps the no-reasoning mode but not the reasoning mode, and one targeted behaviour (CRE drill-down) did not transfer; results are from 60 episodes per configuration on one held-out story. Full RL (GRPO) on Lightning needs far more GPUs than hackathon credits.
 - **Simplified CECL engine.** Annual steps, logistic scorecards with a linear macro shift: transparent and auditable, not a production model.
 - **Attribution order is a choice.** The sequential waterfall is exact but order-dependent; reverse order and Shapley are reported next to it.
 - **Synthetic data with one designed story**; real portfolios are messier.
@@ -292,8 +314,9 @@ Next steps are in the roadmap below.
 | 3 | Single orchestrating agent: Nemotron via NVIDIA API or vLLM, tool loop, grounding check, run metrics | ✅ (live model run pending) |
 | 4 | Specialized agents: Portfolio, Credit, Macro, Model Risk, Reconciliation, Quant (Python sandbox), Reporting (Excel) | ✅ team + delegation (mock + scripted tests); Nemotron run pending |
 | 5 | Streamlit UI (KPIs, waterfall, chat) | |
-| 6 | NVIDIA Nemotron 3.5 Lightning via Red Hat vLLM / NIM on Brev | |
-| 7 | Evaluation vs ground truth: NeMo Gym environment + verifier, in-process evaluator, rollouts → SFT data | ✅ environment + mock baseline; Nemotron scores pending |
+| 6 | NVIDIA Nemotron 3.5 Lightning via Red Hat vLLM / NIM on Brev | ✅ vLLM on a Brev A100 (BF16, base + LoRA) |
+| 7 | Evaluation vs ground truth: NeMo Gym environment + verifier, in-process evaluator, rollouts → SFT data | ✅ environment, story variants, Nemotron baseline 0.977 |
+| 8 | Fine-tuning: LoRA SFT on Nemotron's own passing Gym rollouts | ✅ no-reasoning mode 0.751 → 0.939 on a held-out story |
 
 All data is synthetic (published snapshot in `data/published/`). Ground truth (`data/ground_truth/`) is for evaluation only; tools and agents must not read it (a test enforces this for `src/tools`).
 

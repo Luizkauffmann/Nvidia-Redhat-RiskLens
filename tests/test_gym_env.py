@@ -250,3 +250,11 @@ def test_hint_rows_and_their_export_without_the_hint():
     exported = rollout_to_messages(rollout)
     assert exported["messages"][0]["content"] == r["verifier_metadata"]["distill_system"]
     assert HINTS["q14_cre"] not in exported["messages"][0]["content"]
+
+
+def test_thinking_off_is_a_hydra_override_after_the_model_type():
+    from src.evaluation.gym_runner import POLICIES, THINKING_OFF, _model_args
+
+    assert THINKING_OFF not in _model_args(POLICIES["mock"])
+    args = _model_args(POLICIES["mock"], thinking=False)
+    assert args[-1] == THINKING_OFF and "enable_thinking:false" in THINKING_OFF

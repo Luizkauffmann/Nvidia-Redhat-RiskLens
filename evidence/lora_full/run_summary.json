@@ -1,0 +1,14 @@
+{
+  "model": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+  "data": "data/outputs/sft/vllm_sft.jsonl",
+  "rows": 401,
+  "smoke": false,
+  "steps": 102,
+  "train_loss": 0.2864011311355759,
+  "seconds": 4012,
+  "peak_gpu": "73.5 GiB",
+  "gpu_total": "79.3 GiB",
+  "rank": 16,
+  "alpha": 32,
+  "max_len": 20480
+}
