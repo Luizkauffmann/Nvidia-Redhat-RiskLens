@@ -192,6 +192,8 @@ def test_scenario_scoreboard_matches_the_committed_results():
     assert base["nemotron-3-nano 4B 32k | team"]["mean_quality"] == 0.892       # credited with the specialists' tools
     assert base["Nemotron 3.5 Lightning 30B base | single"]["mean_quality"] == 0.977
     assert all(r["answered"] == 15 and len(r["per_question"]) == 15 for r in board["base"]["rows"])
+    shorts = [r["short"] for r in board["base"]["rows"]]
+    assert len(shorts) == len(set(shorts))                                    # per-question columns stay distinct
     held = {r["label"]: r for r in board["heldout"]["rows"]}
     assert board["heldout"]["story"] == "property_shock"
     assert held["Lightning 30B base, thinking off"]["mean_quality"] == 0.751
