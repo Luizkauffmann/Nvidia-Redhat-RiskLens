@@ -310,6 +310,6 @@ For the hackathon: package the environment and verifier, run Nemotron through it
 | 5 Streamlit app | next | |
 | 6 Nemotron on Brev vLLM | waiting for access | `deploy/brev_serve_nemotron.sh` ready |
 | 7 Evaluation + NeMo Gym environment | ✅ | mock baseline 0.965; Nemotron scores next |
-| 7b Fine-tuning / RL | LoRA done; RL not started | Full LoRA run on one A100 (102 steps, 67 min); adapter served next to the base in vLLM and scored in Gym on the held-out story ([evidence](../evidence/lora_eval/README.md)). Next: more weight on the CRE drill-down, publish the adapter on Hugging Face; GRPO after the event. Section 6.3 |
+| 7b Fine-tuning / RL | LoRA done; RL not started | Full LoRA run on one A100 (102 steps, 67 min); adapter served next to the base in vLLM and scored in Gym on the held-out story ([evidence](../evidence/lora_eval/README.md)). Adapter published: [gcav66/nemotron-3.5-lightning-risklens-lora](https://huggingface.co/gcav66/nemotron-3.5-lightning-risklens-lora). Next: more weight on the CRE drill-down; GRPO after the event. Section 6.3 |
 
 *Sources for the Nemotron and NeMo facts above: the NVIDIA Nemotron 3.5 Lightning model card on Hugging Face, build.nvidia.com, the NeMo RL "Nemotron 3.5 Lightning" guide, and the NeMo Gym docs.*

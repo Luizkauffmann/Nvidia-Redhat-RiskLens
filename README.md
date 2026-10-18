@@ -133,7 +133,7 @@ Mock planner baseline through real Gym servers: mean reward **0.965** on the 21 
 
 ## Fine-tuning: LoRA on Nemotron 3.5 Lightning
 
-We fine-tuned Nemotron 3.5 Lightning (30B total, 3B active, BF16) with LoRA on one A100 80 GB, on its own best investigations collected through the NeMo Gym environment:
+We fine-tuned Nemotron 3.5 Lightning (30B total, 3B active, BF16) with LoRA on one A100 80 GB, on its own best investigations collected through the NeMo Gym environment. **Adapter on Hugging Face: [gcav66/nemotron-3.5-lightning-risklens-lora](https://huggingface.co/gcav66/nemotron-3.5-lightning-risklens-lora)** (OpenMDW 1.1, like the base).
 
 1. Nemotron answers the train questions on the base story and four training variants through Gym (540 rollouts, including 120 hint-distilled rollouts for the CRE drill-down it never did on its own).
 2. `python -m scripts.build_sft_dataset --max-per-task 40`: re-score with the verifier, keep reward ≥ 0.95, cap per question → 401 rows.

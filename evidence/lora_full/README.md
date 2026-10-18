@@ -1,5 +1,7 @@
 # Full LoRA SFT run: Nemotron 3.5 Lightning on its own passing RiskLens rollouts
 
+Published adapter: [gcav66/nemotron-3.5-lightning-risklens-lora](https://huggingface.co/gcav66/nemotron-3.5-lightning-risklens-lora).
+
 | | |
 |---|---|
 | Base | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` |
