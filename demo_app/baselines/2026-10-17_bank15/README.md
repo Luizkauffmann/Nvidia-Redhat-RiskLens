@@ -7,6 +7,8 @@ Same questions (q01–q15), tools, prompts and verifier (`src/evaluation/verifie
 | **Frontier reference** (Claude Opus 5.5, hand-driven) | claude-opus-5-5 | single | 15 | **0.997** | 13 / 15 | n/a | n/a | n/a | 0 | 0 |
 | nemotron-3-nano 4B 32k \| Ollama \| single-agent \| M4 16GB | `nemotron-3-nano-4b-32k` | single | 15 | **0.898** | 10 / 15 | 89.0 s | 88.3 s | 23.6 min | 0 | 0 |
 | nemotron-3-nano 4B 32k \| Ollama \| team \| M4 16GB | `nemotron-3-nano-4b-32k` | team | 15 | **0.892** | 10 / 15 | 192.4 s | n/a | 59.5 min | 0 | 0 |
+| nemotron-3-nano 4B 4-bit \| MLX \| single-agent \| M4 16GB | `default_model` | single | 15 | **0.917** | 9 / 15 | 20.8 s | 20.6 s | 5.6 min | 0 | 0 |
+| nemotron-3-nano 4B 4-bit \| MLX \| team \| M4 16GB | `default_model` | team | 15 | **0.884** | 6 / 15 | 17.3 s | 17.3 s | 7.3 min | 0 | 0 |
 | nemotron-3.5-lightning 30B BF16 base \| vLLM A100 80GB (Brev) \| single-agent \| NeMo Gym | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16` | single | 15 | **0.977** | 10 / 15 | n/a | n/a | n/a | 0 | 0 |
 
 *nemotron-3-nano 4B 32k \| Ollama \| team \| M4 16GB*: quality credits the specialists' tool calls, verified from the tool-call log for 9 delegated answers (the scorer only saw the orchestrator's `ask_<specialist>`); as first scored: 0.832. Median model time is n/a because those runs only timed the orchestrator's turns.
@@ -17,41 +19,41 @@ Same questions (q01–q15), tools, prompts and verifier (`src/evaluation/verifie
 %%{init: {'themeVariables': {'xyChart': {'plotColorPalette': '#2a78d6'}}}}%%
 xychart-beta
     title "Mean answer quality (verifier reward, 0-1)"
-    x-axis ["Frontier ref.", "Ollama \u00b7 single-agent", "Ollama \u00b7 team", "vLLM A100 80GB (Brev) \u00b7 single-agent"]
+    x-axis ["Frontier ref.", "Ollama \u00b7 single-agent", "Ollama \u00b7 team", "MLX \u00b7 single-agent", "MLX \u00b7 team", "vLLM A100 80GB (Brev) \u00b7 single-agent"]
     y-axis "quality" 0 --> 1
-    bar [0.997, 0.898, 0.892, 0.977]
+    bar [0.997, 0.898, 0.892, 0.917, 0.884, 0.977]
 ```
 
 ```mermaid
 %%{init: {'themeVariables': {'xyChart': {'plotColorPalette': '#2a78d6'}}}}%%
 xychart-beta
     title "Median seconds per question (lower is faster)"
-    x-axis ["Ollama \u00b7 single-agent", "Ollama \u00b7 team"]
+    x-axis ["Ollama \u00b7 single-agent", "Ollama \u00b7 team", "MLX \u00b7 single-agent", "MLX \u00b7 team"]
     y-axis "seconds" 0 --> 221
-    bar [89, 192]
+    bar [89, 192, 20.8, 17.3]
 ```
 
 Configurations without a time bar have no comparable per-question time: the frontier reference was driven by hand, and NeMo Gym rollouts do not record wall time per question.
 
 ## Quality by question
 
-| Question | Frontier | Ollama · single-agent | Ollama · team | vLLM A100 80GB (Brev) · single-agent |
-|---|---|---|---|---|
-| q01_previous_allowance: What was the CECL allowance in July 2026? | 1.00 | 1.00 (48 s) | 1.00 (54 s) | 1.00 |
-| q02_current_allowance: What was the CECL allowance at the end of August 2026? | 1.00 | 0.45 (71 s) | 0.45 (100 s) | 0.99 |
-| q03_dollar_change: By how many dollars did the allowance change from July to August? | 1.00 | 1.00 (45 s) | 1.00 (52 s) | 1.00 |
-| q04_pct_change: What was the percentage increase in the allowance between July and August? | 1.00 | 1.00 (35 s) | 1.00 (37 s) | 1.00 |
-| q05_drivers: Why did our allowance increase in August? What were the major drivers? | 1.00 | 0.74 (154 s) | 0.86 (195 s) | 0.98 |
-| q06_top_portfolio: Which portfolio contributed most to the allowance increase? | 1.00 | 1.00 (64 s) | 1.00 (261 s) | 1.00 |
-| q07_top_borrowers: Which borrowers contributed most to the increase? Who should I investigate first? | 1.00 | 1.00 (89 s) | 0.35 (853 s) | 0.91 |
-| q08_pd: Did probability of default increase between July and August? | 0.99 | 1.00 (62 s) | 1.00 (265 s) | 1.00 |
-| q09_lgd: Did LGD increase, and did it drive the change? | 1.00 | 1.00 (176 s) | 1.00 (298 s) | 0.97 |
-| q10_exposure: Did exposure grow? How much new business did we originate? | 1.00 | 1.00 (141 s) | 1.00 (312 s) | 1.00 |
-| q11_macro_variable: Which macroeconomic variable had the largest impact on the allowance? | 1.00 | 1.00 (44 s) | 1.00 (192 s) | 1.00 |
-| q12_weights: Did the scenario weights change between July and August? | 1.00 | 0.97 (124 s) | 1.00 (121 s) | 1.00 |
-| q13_model_change: Could this increase just be because we changed models? | 1.00 | 1.00 (92 s) | 0.90 (168 s) | 1.00 |
-| q14_cre: What happened specifically in Commercial Real Estate? | 0.97 | 0.72 (101 s) | 0.82 (545 s) | 0.80 |
-| q15_reconcile: Does the attribution reconcile to the total allowance change? | 1.00 | 0.59 (172 s) | 1.00 (120 s) | 1.00 |
+| Question | Frontier | Ollama · single-agent | Ollama · team | MLX · single-agent | MLX · team | vLLM A100 80GB (Brev) · single-agent |
+|---|---|---|---|---|---|---|
+| q01_previous_allowance: What was the CECL allowance in July 2026? | 1.00 | 1.00 (48 s) | 1.00 (54 s) | 1.00 (13 s) | 1.00 (11 s) | 1.00 |
+| q02_current_allowance: What was the CECL allowance at the end of August 2026? | 1.00 | 0.45 (71 s) | 0.45 (100 s) | 1.00 (18 s) | 1.00 (14 s) | 0.99 |
+| q03_dollar_change: By how many dollars did the allowance change from July to August? | 1.00 | 1.00 (45 s) | 1.00 (52 s) | 1.00 (17 s) | 0.90 (13 s) | 1.00 |
+| q04_pct_change: What was the percentage increase in the allowance between July and August? | 1.00 | 1.00 (35 s) | 1.00 (37 s) | 1.00 (20 s) | 0.90 (13 s) | 1.00 |
+| q05_drivers: Why did our allowance increase in August? What were the major drivers? | 1.00 | 0.74 (154 s) | 0.86 (195 s) | 0.86 (21 s) | 0.86 (15 s) | 0.98 |
+| q06_top_portfolio: Which portfolio contributed most to the allowance increase? | 1.00 | 1.00 (64 s) | 1.00 (261 s) | 0.35 (21 s) | 0.35 (13 s) | 1.00 |
+| q07_top_borrowers: Which borrowers contributed most to the increase? Who should I investigate first? | 1.00 | 1.00 (89 s) | 0.35 (853 s) | 1.00 (33 s) | 1.00 (64 s) | 0.91 |
+| q08_pd: Did probability of default increase between July and August? | 0.99 | 1.00 (62 s) | 1.00 (265 s) | 0.90 (25 s) | 0.90 (17 s) | 1.00 |
+| q09_lgd: Did LGD increase, and did it drive the change? | 1.00 | 1.00 (176 s) | 1.00 (298 s) | 0.97 (48 s) | 1.00 (27 s) | 0.97 |
+| q10_exposure: Did exposure grow? How much new business did we originate? | 1.00 | 1.00 (141 s) | 1.00 (312 s) | 0.86 (27 s) | 0.90 (35 s) | 1.00 |
+| q11_macro_variable: Which macroeconomic variable had the largest impact on the allowance? | 1.00 | 1.00 (44 s) | 1.00 (192 s) | 1.00 (16 s) | 1.00 (53 s) | 1.00 |
+| q12_weights: Did the scenario weights change between July and August? | 1.00 | 0.97 (124 s) | 1.00 (121 s) | 1.00 (12 s) | 0.90 (13 s) | 1.00 |
+| q13_model_change: Could this increase just be because we changed models? | 1.00 | 1.00 (92 s) | 0.90 (168 s) | 1.00 (21 s) | 1.00 (48 s) | 1.00 |
+| q14_cre: What happened specifically in Commercial Real Estate? | 0.97 | 0.72 (101 s) | 0.82 (545 s) | 0.82 (19 s) | 0.82 (55 s) | 0.80 |
+| q15_reconcile: Does the attribution reconcile to the total allowance change? | 1.00 | 0.59 (172 s) | 1.00 (120 s) | 1.00 (23 s) | 0.72 (50 s) | 1.00 |
 
 Cells: quality (seconds for that question).
 

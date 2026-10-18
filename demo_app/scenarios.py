@@ -47,7 +47,8 @@ def _short(label: str, agents: str) -> str:
     if "Lightning" in label:
         return "Lightning 30B"
     if "4B" in label:
-        return f"Local 4B {'team' if agents == 'team' else 'single'}"
+        runtime = next((rt for rt in ("MLX", "Ollama", "vLLM") if rt in label), "")
+        return f"4B {runtime} {'team' if agents == 'team' else 'single'}".replace("  ", " ")
     return label[:24]
 
 
