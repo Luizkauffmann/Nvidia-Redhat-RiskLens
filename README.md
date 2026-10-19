@@ -17,6 +17,7 @@ Specialized small-model agents investigate why the credit-loss allowance moved. 
 | **Serving** | Red Hat vLLM on NVIDIA Brev (`deploy/brev_serve_nemotron.sh`) or the NVIDIA API catalog |
 | **Data** | Synthetic and seeded, published in [`data/published/`](data/published); data card in [`docs/DATA.md`](docs/DATA.md) |
 | **Demo video** | _add unlisted YouTube/Vimeo link_ |
+| **Pitch deck** | [PDF](docs/pitch/RiskLens_AI_Nemotron_pitch.pdf) · [PowerPoint / Google Slides](docs/pitch/RiskLens_AI_Nemotron_pitch.pptx) (added after judging) |
 
 ## Quick start (local)
 
